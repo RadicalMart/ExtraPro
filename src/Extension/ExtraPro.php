@@ -19,6 +19,7 @@ use Joomla\CMS\Filesystem\Folder;
 use Joomla\CMS\Filesystem\Path;
 use Joomla\CMS\Form\Form;
 use Joomla\CMS\HTML\HTMLHelper;
+use Joomla\CMS\Language\Text;
 use Joomla\CMS\Layout\LayoutHelper;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Router\Route;
@@ -30,6 +31,7 @@ use Joomla\Database\ParameterType;
 use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
 use Joomla\Event\SubscriberInterface;
+use Joomla\Registry\Registry;
 
 class ExtraPro extends CMSPlugin implements SubscriberInterface
 {
@@ -134,6 +136,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			'onBeforeCompileHead'     => 'onBeforeCompileHead',
 			'onAfterRender'           => 'onAfterRender',
 			'onExtensionAfterInstall' => 'onExtensionAfterInstall',
+			'onAjaxExtraPro'          => 'onAjax'
 		];
 	}
 
@@ -198,6 +201,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	public function onBeforeCompileHead()
 	{
 		$this->loadConfigWebAsset();
+		$this->addYOOthemeChildOverrides();
 	}
 
 	/**
@@ -249,6 +253,35 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			$this->enableChildTemplate(true);
 		}
 	}
+
+	/**
+	 * Method to ajax functions.
+	 *
+	 * @throws  \Exception
+	 *
+	 * @since  __DEPLOY_VERSION__
+	 */
+	public function onAjax(Event $event)
+	{
+		try
+		{
+			$action = $this->app->input->get('action');
+			$method = $action;
+			if (empty($action) || !method_exists($this, $method))
+			{
+				throw new \Exception(Text::sprintf('PLG_SYSTEM_EXTRAPRO_ERROR_AJAX_METHOD_NOT_FOUND', $method), 500);
+			}
+
+			$result = $this->$method();
+			$event->setArgument('result', $result);
+			$event->setArgument('results', $result);
+		}
+		catch (\Exception $e)
+		{
+			throw new \Exception($e->getMessage(), $e->getCode(), $e);
+		}
+	}
+
 
 	/**
 	 * Method to check core child templates functions enabled and fix if need.
@@ -550,5 +583,208 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			$button  = new CustomButton('ExtraProPreview', 'PLG_SYSTEM_EXTRAPRO_PREVIEW', ['html' => $html]);
 			$toolbar->appendButton($button);
 		}
+	}
+
+	/**
+	 * Method to add YOOtheme overrides to child templates.
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected function addYOOthemeChildOverrides()
+	{
+		if (!$this->functions['child']
+			|| !$this->app->isClient('administrator')
+			|| $this->app->input->getCmd('option') !== 'com_templates'
+			|| $this->app->input->getCmd('view') !== 'template'
+		)
+		{
+			return;
+		}
+
+		$eid      = $this->app->input->getInt('id');
+		$db       = $this->db;
+		$query    = $db->getQuery(true)
+			->select('manifest_cache')
+			->from($db->quoteName('#__extensions'))
+			->where($db->quoteName('extension_id') . ' = :eid')
+			->bind(':eid', $eid, ParameterType::INTEGER);
+		$template = $db->setQuery($query, 0, 1)->loadResult();
+		if (!$template)
+		{
+			return;
+		}
+
+		$template = new Registry($template);
+		if ($template->get('parent') !== 'yootheme')
+		{
+			return;
+		}
+
+		$tree = $this->getOverrides();
+		$html = LayoutHelper::render('plugins.system.extrapro.administrator.child.overrides',
+			['tree' => $tree]);
+
+		$assets = $this->app->getDocument()->getWebAssetManager();
+		$assets->addInlineScript("document.addEventListener('DOMContentLoaded', function () {
+				let tab = document.querySelector('#content joomla-tab#myTab joomla-tab-element#overrides');
+				if (!tab || tab.getAttribute('extrapro-overrides-load') === 'true') {
+					return;
+				}
+				tab.innerHTML += '" . preg_replace("/\s+|\n+|\r/", ' ', $html) . "';
+				tab.setAttribute('extrapro-overrides-load', 'true');
+			
+			});");
+	}
+
+	/**
+	 * Method to get overrides files tree
+	 *
+	 * @param   string|null  $path    Search path
+	 * @param   array        $result  Current tree.
+	 *
+	 * @return array Overrides files tree.
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected function getOverrides(?string $path = null, array &$result = []): array
+	{
+		// Add root folders
+		if (empty($path))
+		{
+			$root = JPATH_ROOT . '/templates/yootheme';
+
+			foreach (['html', 'templates'] as $folder)
+			{
+				$result[$folder] = $this->getOverrides($root . '/' . $folder);
+			}
+
+			foreach (['component.php', 'error.php', 'index.php', 'offline.php'] as $file)
+			{
+				$result[$file] = $root . '/' . $file;
+			}
+
+			return $result;
+		}
+
+		// Get Folders
+		$folders = Folder::folders($path);
+		foreach ($folders as $folder)
+		{
+			if (!isset($result[$folder]))
+			{
+				$result[$folder] = [];
+			}
+
+			$result[$folder] = $this->getOverrides($path . '/' . $folder, $result[$folder]);
+
+			if (empty($result[$folder]))
+			{
+				unset($result[$folder]);
+			}
+		}
+
+		// Get files
+		$files = Folder::files($path, '.php');
+		if (!empty($files))
+		{
+			foreach ($files as $file)
+			{
+				$result[$file] = $path . '/' . $file;
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Method to create YOOtheme file override.
+	 *
+	 * @throws \Exception
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected function createOverride()
+	{
+		if (!$this->functions['child'])
+		{
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FUNCTION_DISABLE'), 500);
+		}
+
+		if (!$this->app->isClient('administrator') || !$this->app->getIdentity()->authorise('core.admin'))
+		{
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_ACCESS_DENIED'), 500);
+		}
+
+		$file = $this->app->input->getBase64('file');
+		if (empty($file))
+		{
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FILE_NOT_FOUND'), 500);
+		}
+
+		$eid       = $this->app->input->getInt('template_id');
+		$db        = $this->db;
+		$query     = $db->getQuery(true)
+			->select(['element', 'manifest_cache'])
+			->from($db->quoteName('#__extensions'))
+			->where($db->quoteName('extension_id') . ' = :eid')
+			->bind(':eid', $eid, ParameterType::INTEGER);
+		$extension = $db->setQuery($query, 0, 1)->loadObject();
+		if (!$extension)
+		{
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_TEMPLATE_NOT_FOUND'), 500);
+		}
+
+		$template = new Registry($extension->manifest_cache);
+		if ($template->get('parent') !== 'yootheme')
+		{
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_TEMPLATE_IS_NOT_CHILD'), 500);
+		}
+
+		$src = base64_decode($file);
+		if (empty($src))
+		{
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FILE_NOT_FOUND'), 500);
+		}
+
+		if (strpos($src, JPATH_ROOT . '/templates/yootheme/') === false)
+		{
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_ACCESS_DENIED'), 500);
+		}
+
+		$dest = Path::clean(str_replace('/templates/yootheme/', '/templates/' . $extension->element . '/', $src));
+		$src  = Path::clean($src);
+
+		if (!File::exists($src))
+		{
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FILE_NOT_FOUND'), 500);
+		}
+
+		if (File::exists($dest))
+		{
+			File::delete($dest);
+		}
+
+		$folder = dirname($dest);
+		if (!Folder::exists($folder))
+		{
+			Folder::create($folder);
+		}
+
+		$contents = file_get_contents($src);
+		if ($contents === false)
+		{
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_GET_FILE_CONTENTS'), 500);
+		}
+
+		$result = file_put_contents($dest, file_get_contents($src));
+		if (!$result)
+		{
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_COPY_FILE'), 500);
+		}
+
+		$redirect = Route::link('administrator', 'index.php?option=com_templates&view=template&id=' . $eid, false);
+		$this->app->enqueueMessage(Text::sprintf('PLG_SYSTEM_EXTRAPRO_OVERRIDE_CREATED',
+			str_replace(JPATH_ROOT, '', $dest)));
+		$this->app->redirect($redirect);
 	}
 }
