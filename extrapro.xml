@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="plugin" group="system" method="upgrade">
+	<name>PLG_SYSTEM_EXTRAPRO</name>
+	<author>RadicalMart Team</author>
+	<creationDate>August 2023</creationDate>
+	<copyright>Copyright (c) 2023 RadicalMart. All rights reserved.</copyright>
+	<license>https://www.gnu.org/copyleft/gpl.html GNU/GPL</license>
+	<authorEmail>info@radicalmart.ru</authorEmail>
+	<authorUrl>https://radicalmart.ru/</authorUrl>
+	<version>0.0.1-dev</version>
+	<description>PLG_SYSTEM_EXTRAPRO_DESCRIPTION</description>
+	<scriptfile>script.php</scriptfile>
+	<namespace path="src">Joomla\Plugin\System\ExtraPro</namespace>
+	<languages folder="language">
+		<language tag="en-GB">en-GB/en-GB.plg_system_extrapro.ini</language>
+		<language tag="en-GB">en-GB/en-GB.plg_system_extrapro.sys.ini</language>
+		<language tag="ru-RU">ru-RU/ru-RU.plg_system_extrapro.ini</language>
+		<language tag="ru-RU">ru-RU/ru-RU.plg_system_extrapro.sys.ini</language>
+	</languages>
+	<files>
+		<folder>services</folder>
+		<folder plugin="extrapro">src</folder>
+		<folder>yootheme</folder>
+	</files>
+	<config>
+		<fields name="params">
+			<fieldset name="params" label="PLG_SYSTEM_EXTRAPRO_PARAMS">
+				<fieldset name="child" label="PLG_SYSTEM_EXTRAPRO_PARAMS_CHILD"
+						  description="PLG_SYSTEM_EXTRAPRO_PARAMS_CHILD_DESC">
+					<field name="child" type="radio"
+						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_ENABLE"
+						   class="btn-group btn-group-yesno"
+						   default="0">
+						<option value="1">JYES</option>
+						<option value="0">JNO</option>
+					</field>
+				</fieldset>
+				<fieldset name="images" label="PLG_SYSTEM_EXTRAPRO_PARAMS_IMAGES"
+						  description="PLG_SYSTEM_EXTRAPRO_PARAMS_IMAGES_DESC">
+					<field name="images" type="radio"
+						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_ENABLE"
+						   class="btn-group btn-group-yesno"
+						   default="0">
+						<option value="1">JYES</option>
+						<option value="0">JNO</option>
+					</field>
+				</fieldset>
+				<fieldset name="unset_modules" label="PLG_SYSTEM_EXTRAPRO_PARAMS_UNSET_MODULES"
+						  description="PLG_SYSTEM_EXTRAPRO_PARAMS_UNSET_MODULES_DESC">
+					<field name="unset_modules" type="radio"
+						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_ENABLE"
+						   class="btn-group btn-group-yesno"
+						   default="0"
+						   readonly="true">
+						<option value="1">JYES</option>
+						<option value="0">JNO</option>
+					</field>
+				</fieldset>
+				<fieldset name="toolbar" label="PLG_SYSTEM_EXTRAPRO_PARAMS_TOOLBAR"
+						  description="PLG_SYSTEM_EXTRAPRO_PARAMS_TOOLBAR_DESC">
+					<field name="toolbar" type="radio"
+						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_ENABLE"
+						   class="btn-group btn-group-yesno"
+						   default="0"
+						   readonly="true">
+						<option value="1">JYES</option>
+						<option value="0">JNO</option>
+					</field>
+					<field name="toolbar_position" type="list"
+						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_TOOLBAR_POSITION"
+						   default="center-right"
+						   showon="toolbar:1">
+						<option value="top-left">Top Left</option>
+						<option value="top-center">Top Center</option>
+						<option value="top-right">Top Right</option>
+						<option value="center-left">Center Left</option>
+						<option value="center-right">Center Right</option>
+						<option value="bottom-left">Bottom Left</option>
+						<option value="bottom-center">Bottom Center</option>
+						<option value="bottom-right">Bottom Right</option>
+					</field>
+				</fieldset>
+				<fieldset name="preview" label="PLG_SYSTEM_EXTRAPRO_PARAMS_PREVIEW"
+						  description="PLG_SYSTEM_EXTRAPRO_PARAMS_PREVIEW_DESC">
+					<field name="preview" type="radio"
+						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_ENABLE"
+						   class="btn-group btn-group-yesno"
+						   default="0">
+						<option value="1">JYES</option>
+						<option value="0">JNO</option>
+					</field>
+				</fieldset>
+			</fieldset>
+		</fields>
+	</config>
+	<layouts destination="plugins/system/extrapro" folder="layouts">
+		<folder>administrator</folder>
+		<folder>site</folder>
+	</layouts>
+	<media destination="plg_system_extrapro" folder="media">
+		<folder>js</folder>
+		<filename>joomla.asset.json</filename>
+	</media>
+	<updateservers>
+		<server type="extension" priority="1" name="ExtraPro">
+			https://sovmart.ru/update?element=plg_system_extrapro
+		</server>
+	</updateservers>
+</extension>
