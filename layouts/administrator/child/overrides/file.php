@@ -13,11 +13,17 @@
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\Router\Route;
-use Joomla\CMS\Session\Session;
 
 extract($displayData);
 
-$input = Factory::getApplication()->input;
+/**
+ * Layout variables
+ * -----------------
+ *
+ * @var  string $path File path.
+ * @var  string $name File name.
+ *
+ */
 
 $url = 'index.php?option=com_ajax&plugin=ExtraPro&group=system&format=html&action=createOverride'
 	. '&template_id=' . Factory::getApplication()->input->getInt('id')

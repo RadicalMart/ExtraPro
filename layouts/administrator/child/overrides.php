@@ -9,30 +9,36 @@
  * @link        https://radicalmart.ru/
  */
 
-use Joomla\CMS\Layout\LayoutHelper;
-
 \defined('_JEXEC') or die;
+
+use Joomla\CMS\Layout\LayoutHelper;
 
 extract($displayData);
 
-
+/**
+ * Layout variables
+ * -----------------
+ *
+ * @var  array $tree Folders and files tree.
+ *
+ */
 ?>
 
 <div class="col-md-3">
 	<fieldset class="options-form">
 		<legend>YOOtheme</legend>
 		<ul class="list-unstyled">
-			<?php foreach ($tree as $name => $folder) : ?>
+			<?php foreach ($tree as $name => $value) : ?>
 				<li>
-					<?php if (is_array($folder))
+					<?php if (is_array($value))
 					{
 						echo LayoutHelper::render('plugins.system.extrapro.administrator.child.overrides.folder',
-							['name' => $name, 'tree' => $folder]);
+							['name' => $name, 'tree' => $value]);
 					}
 					else
 					{
 						echo LayoutHelper::render('plugins.system.extrapro.administrator.child.overrides.file',
-							['name' => $name, 'path' => $folder]);
+							['name' => $name, 'path' => $value]);
 					} ?>
 				</li>
 			<?php endforeach; ?>
