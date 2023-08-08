@@ -3,6 +3,10 @@ const entry = {
 		import: './plg_system_extrapro/es6/administrator/config.es6',
 		filename: 'administrator/config.js',
 	},
+	"administrator/overrides": {
+		import: './plg_system_extrapro/es6/administrator/overrides.es6',
+		filename: 'administrator/overrides.js',
+	},
 	"site/toolbar": {
 		import: './plg_system_extrapro/es6/site/toolbar.es6',
 		filename: 'site/toolbar.js',

@@ -16,9 +16,23 @@
 			"version": "auto"
 		},
 		{
+			"name": "plg_system_extrapro.administrator.overrides",
+			"type": "script",
+			"uri": "plg_system_extrapro/administrator/overrides.min.js",
+			"class": "OverridesItem",
+			"namespace": "Joomla\\Plugin\\System\\ExtraPro\\WebAsset\\AssetItem",
+			"attributes": {
+				"defer": true,
+				"type": "module"
+			},
+			"version": "auto"
+		},
+		{
 			"name": "plg_system_extrapro.site.toolbar",
 			"type": "script",
 			"uri": "plg_system_extrapro/site/toolbar.min.js",
+			"class": "OverridesItem",
+			"namespace": "Joomla\\Plugin\\System\\ExtraPro\\WebAsset\\AssetItem\\Site",
 			"attributes": {
 				"defer": true,
 				"type": "module"

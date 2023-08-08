@@ -26,6 +26,7 @@ use Joomla\CMS\Router\Route;
 use Joomla\CMS\Toolbar\Button\CustomButton;
 use Joomla\CMS\Toolbar\Toolbar;
 use Joomla\CMS\Uri\Uri;
+use Joomla\CMS\WebAsset\WebAssetManager;
 use Joomla\Database\DatabaseDriver;
 use Joomla\Database\ParameterType;
 use Joomla\Event\DispatcherInterface;
@@ -518,9 +519,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			&& $this->app->input->getCmd('view') === 'plugin'
 			&& $this->app->input->getInt('extension_id') === $this->_id)
 		{
-			$assets = $this->app->getDocument()->getWebAssetManager();
-			$assets->getRegistry()->addExtensionRegistryFile('plg_system_extrapro');
-			$assets->useScript('plg_system_extrapro.administrator.config');
+			$this->getWebAssetManager()->useScript('plg_system_extrapro.administrator.config');
 		}
 	}
 
@@ -573,7 +572,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			$toolbar = Toolbar::getInstance();
 
 			$preview = Route::link('site', $preview);
-			$html    = LayoutHelper::render('plugins.system.extrapro.administrator.toolbar.link', [
+			$html    = LayoutHelper::render('plugins.system.extrapro.administrator.preview.toolbar', [
 				'link'  => $preview,
 				'text'  => 'PLG_SYSTEM_EXTRAPRO_PREVIEW',
 				'icon'  => 'eye',
@@ -620,24 +619,50 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			return;
 		}
 
-		$tree = $this->getOverrides();
-		$html = LayoutHelper::render('plugins.system.extrapro.administrator.child.overrides',
-			['tree' => $tree]);
-
-		$assets = $this->app->getDocument()->getWebAssetManager();
-		$assets->addInlineScript("document.addEventListener('DOMContentLoaded', function () {
-				let tab = document.querySelector('#content joomla-tab#myTab joomla-tab-element#overrides');
-				if (!tab || tab.getAttribute('extrapro-overrides-load') === 'true') {
-					return;
-				}
-				tab.innerHTML += '" . preg_replace("/\s+|\n+|\r/", ' ', $html) . "';
-				tab.setAttribute('extrapro-overrides-load', 'true');
-			
-			});");
+		$assets = $this->getWebAssetManager();
+		$assets->useScript('plg_system_extrapro.administrator.overrides');
+		$this->app->getDocument()->addScriptOptions('extrapro_overrides', [
+			'controller'   => Route::link('administrator',
+				'index.php?option=com_ajax&plugin=ExtraPro&group=system&format=json', false),
+			'extension_id' => $eid,
+		]);
 	}
 
 	/**
 	 * Method to get overrides files tree
+	 *
+	 * @throws \Exception
+	 *
+	 * @return string Overrides files tree.
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected function getOverridesHtml(): string
+	{
+		$result = '';
+
+		if (!$this->functions['child'])
+		{
+			return $result;
+		}
+
+		if (!$this->app->isClient('administrator') || !$this->app->getIdentity()->authorise('core.admin'))
+		{
+			return $result;
+		}
+
+		$tree = $this->getOverrides();
+		if (empty($tree))
+		{
+			return $result;
+		}
+
+		return LayoutHelper::render('plugins.system.extrapro.administrator.overrides.block',
+			['tree' => $tree]);
+	}
+
+	/**
+	 * Method to get overrides files tree.
 	 *
 	 * @param   string|null  $path    Search path
 	 * @param   array        $result  Current tree.
@@ -707,18 +732,18 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	{
 		if (!$this->functions['child'])
 		{
-			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FUNCTION_DISABLE'), 500);
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FUNCTION_DISABLE'), 403);
 		}
 
 		if (!$this->app->isClient('administrator') || !$this->app->getIdentity()->authorise('core.admin'))
 		{
-			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_ACCESS_DENIED'), 500);
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_ACCESS_DENIED'), 403);
 		}
 
 		$file = $this->app->input->getBase64('file');
 		if (empty($file))
 		{
-			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FILE_NOT_FOUND'), 500);
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FILE_NOT_FOUND'), 404);
 		}
 
 		$eid       = $this->app->input->getInt('template_id');
@@ -731,7 +756,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		$extension = $db->setQuery($query, 0, 1)->loadObject();
 		if (!$extension)
 		{
-			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_TEMPLATE_NOT_FOUND'), 500);
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_TEMPLATE_NOT_FOUND'), 404);
 		}
 
 		$template = new Registry($extension->manifest_cache);
@@ -743,12 +768,12 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		$src = base64_decode($file);
 		if (empty($src))
 		{
-			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FILE_NOT_FOUND'), 500);
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FILE_NOT_FOUND'), 404);
 		}
 
 		if (strpos($src, JPATH_ROOT . '/templates/yootheme/') === false)
 		{
-			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_ACCESS_DENIED'), 500);
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_ACCESS_DENIED'), 403);
 		}
 
 		$dest = Path::clean(str_replace('/templates/yootheme/', '/templates/' . $extension->element . '/', $src));
@@ -756,7 +781,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 
 		if (!File::exists($src))
 		{
-			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FILE_NOT_FOUND'), 500);
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FILE_NOT_FOUND'), 404);
 		}
 
 		if (File::exists($dest))
@@ -773,7 +798,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		$contents = file_get_contents($src);
 		if ($contents === false)
 		{
-			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_GET_FILE_CONTENTS'), 500);
+			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_GET_FILE_CONTENTS'), 404);
 		}
 
 		$result = file_put_contents($dest, file_get_contents($src));
@@ -786,5 +811,20 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		$this->app->enqueueMessage(Text::sprintf('PLG_SYSTEM_EXTRAPRO_OVERRIDE_CREATED',
 			str_replace(JPATH_ROOT, '', $dest)));
 		$this->app->redirect($redirect);
+	}
+
+	/**
+	 * Method to get WebAssetManager with load ExtraPro Plugin.
+	 *
+	 * @return WebAssetManager Joomla WebAsset Manager.
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected function getWebAssetManager(): WebAssetManager
+	{
+		$assets = $this->app->getDocument()->getWebAssetManager();
+		$assets->getRegistry()->addExtensionRegistryFile('plg_system_extrapro');
+
+		return $assets;
 	}
 }

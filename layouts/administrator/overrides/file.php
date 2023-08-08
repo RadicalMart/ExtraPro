@@ -26,7 +26,7 @@ extract($displayData);
  */
 
 $url = 'index.php?option=com_ajax&plugin=ExtraPro&group=system&format=html&action=createOverride'
-	. '&template_id=' . Factory::getApplication()->input->getInt('id')
+	. '&template_id=' . Factory::getApplication()->input->getInt('extension_id')
 	. '&file=' . base64_encode($path);
 ?>
 

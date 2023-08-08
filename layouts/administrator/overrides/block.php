@@ -23,25 +23,10 @@ extract($displayData);
  *
  */
 ?>
-
 <div class="col-md-3">
 	<fieldset class="options-form">
 		<legend>YOOtheme</legend>
-		<ul class="list-unstyled">
-			<?php foreach ($tree as $name => $value) : ?>
-				<li>
-					<?php if (is_array($value))
-					{
-						echo LayoutHelper::render('plugins.system.extrapro.administrator.child.overrides.folder',
-							['name' => $name, 'tree' => $value]);
-					}
-					else
-					{
-						echo LayoutHelper::render('plugins.system.extrapro.administrator.child.overrides.file',
-							['name' => $name, 'path' => $value]);
-					} ?>
-				</li>
-			<?php endforeach; ?>
-		</ul>
+		<?php echo LayoutHelper::render('plugins.system.extrapro.administrator.overrides.folder',
+			['tree' => $tree]); ?>
 	</fieldset>
 </div>

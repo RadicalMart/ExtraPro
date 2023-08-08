@@ -50,7 +50,7 @@ if (!empty($class) || !empty($order))
 	}
 	if (!empty($order))
 	{
-		$attributes['class'][] = 'extrapro_toolbar_order';
+		$attributes['class'][] = 'extrapro_preview_toolbar_order';
 		$attributes['style']   = 'order: ' . $order . ';   margin-inline-start: 0.75rem;';
 	}
 	$attributes['class'] = implode(' ', $attributes['class']);
@@ -71,7 +71,7 @@ $link = Route::_($link, false);
 				let button = document.querySelector('#toolbar a[href="<?php echo $link;?>"]');
 				if (button) {
 					let toolbar = button.closest("#toolbar"),
-						first = toolbar.querySelector('joomla-toolbar-button:not(.extrapro_toolbar_order');
+						first = toolbar.querySelector('joomla-toolbar-button:not(.extrapro_preview_toolbar_order');
 					first.style.marginInlineStart = '0';
 				}
 			});
