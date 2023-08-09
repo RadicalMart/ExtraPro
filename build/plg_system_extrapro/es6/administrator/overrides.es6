@@ -33,6 +33,14 @@ class ExtraProOverrides extends ExtraProAjax {
 				return;
 			}
 			row.innerHTML += response;
+
+			document.querySelectorAll(
+				'.folder-url, .component-folder-url, .plugin-folder-url, .layout-folder-url')
+				.forEach((element) => {
+					let clone = element.cloneNode(true);
+					element.parentNode.replaceChild(clone, element);
+				})
+
 			tab.setAttribute('extrapro-overrides-load', 'true');
 
 			Joomla.optionsStorage['joomla.messages'] = [];
