@@ -7,7 +7,7 @@
 	<license>https://www.gnu.org/copyleft/gpl.html GNU/GPL</license>
 	<authorEmail>info@radicalmart.ru</authorEmail>
 	<authorUrl>https://radicalmart.ru/</authorUrl>
-	<version>0.0.4-dev</version>
+	<version>0.0.5-dev</version>
 	<description>PLG_SYSTEM_EXTRAPRO_DESCRIPTION</description>
 	<scriptfile>script.php</scriptfile>
 	<namespace path="src">Joomla\Plugin\System\ExtraPro</namespace>
@@ -62,8 +62,7 @@
 					<field name="toolbar" type="radio"
 						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_ENABLE"
 						   class="btn-group btn-group-yesno"
-						   default="0"
-						   readonly="true">
+						   default="0">
 						<option value="1">JYES</option>
 						<option value="0">JNO</option>
 					</field>
@@ -79,6 +78,12 @@
 						<option value="bottom-left">Bottom Left</option>
 						<option value="bottom-center">Bottom Center</option>
 						<option value="bottom-right">Bottom Right</option>
+					</field>
+					<field name="toolbar_access" type="accesslevel"
+						   label="JFIELD_ACCESS_LABEL"
+						   showon="toolbar:1"
+						   default="0">
+						<option value="0">JALL</option>
 					</field>
 				</fieldset>
 				<fieldset name="preview" label="PLG_SYSTEM_EXTRAPRO_PARAMS_PREVIEW"

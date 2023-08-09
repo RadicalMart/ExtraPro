@@ -1,6 +1,6 @@
 {
 	"name": "plg_system_extrapro",
-	"version": "0.0.4-dev",
+	"version": "0.0.5-dev",
 	"description": "YOOtheme Pro Enhancement Plugin",
 	"private": true,
 	"scripts": {

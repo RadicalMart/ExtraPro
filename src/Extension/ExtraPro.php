@@ -13,7 +13,11 @@ namespace Joomla\Plugin\System\ExtraPro\Extension;
 
 \defined('_JEXEC') or die;
 
+use Joomla\CMS\Application\AdministratorApplication;
+use Joomla\CMS\Application\ApplicationHelper;
 use Joomla\CMS\Application\CMSApplication;
+use Joomla\CMS\Component\ComponentHelper;
+use Joomla\CMS\Factory;
 use Joomla\CMS\Filesystem\File;
 use Joomla\CMS\Filesystem\Folder;
 use Joomla\CMS\Filesystem\Path;
@@ -23,16 +27,20 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\Layout\LayoutHelper;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Router\Route;
+use Joomla\CMS\Session\Storage\JoomlaStorage;
 use Joomla\CMS\Toolbar\Button\CustomButton;
 use Joomla\CMS\Toolbar\Toolbar;
 use Joomla\CMS\Uri\Uri;
+use Joomla\CMS\User\User;
 use Joomla\CMS\WebAsset\WebAssetManager;
 use Joomla\Database\DatabaseDriver;
 use Joomla\Database\ParameterType;
+use Joomla\DI\Container;
 use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
 use Joomla\Event\SubscriberInterface;
 use Joomla\Registry\Registry;
+use Joomla\Session\SessionInterface;
 
 class ExtraPro extends CMSPlugin implements SubscriberInterface
 {
@@ -203,6 +211,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	{
 		$this->loadConfigWebAsset();
 		$this->addYOOthemeChildOverrides();
+		$this->addSiteToolbar();
 	}
 
 	/**
@@ -810,6 +819,238 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		$this->app->enqueueMessage(Text::sprintf('PLG_SYSTEM_EXTRAPRO_OVERRIDE_CREATED',
 			str_replace(JPATH_ROOT, '', $dest)));
 		$this->app->redirect($redirect);
+	}
+
+	/**
+	 * Method to add site toolbar script.
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected function addSiteToolbar()
+	{
+		if (!$this->functions['toolbar'] || !$this->checkTemplate())
+		{
+			return;
+		}
+
+		$context = '';
+		$option  = $this->app->input->get('option');
+		$view    = $this->app->input->get('view');
+		$id      = $this->app->input->getInt('id');
+		if ($option === 'com_content')
+		{
+			if ($view === 'article')
+			{
+				$context = 'com_content.article.' . $id;
+			}
+			elseif (in_array($view, ['category', 'categories']) && $id > 1)
+			{
+				$context = 'com_content.category.' . $id;
+			}
+		}
+		elseif ($option === 'com_radicalmart')
+		{
+			if ($view === 'product')
+			{
+				$context = 'com_radicalmart.product.' . $id;
+			}
+			elseif (in_array($view, ['category', 'categories']))
+			{
+				$context = 'com_radicalmart.category.' . $id;
+			}
+		}
+
+		// Trigger `onExtraProGetToolbarContext` event
+		$this->app->triggerEvent('onExtraProGetToolbarContext', [&$context]);
+
+		$assets = $this->getWebAssetManager();
+		$assets->useScript('plg_system_extrapro.site.toolbar');
+		$this->app->getDocument()->addScriptOptions('extrapro_toolbar', [
+			'controller' => Route::link('site',
+				'index.php?option=com_ajax&plugin=ExtraPro&group=system&format=json', false),
+			'context'    => $context,
+		]);
+	}
+
+	/**
+	 * Method to get site toolbar html.
+	 *
+	 * @return string Site toolbar html.
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected function getToolbarHtml(): string
+	{
+		if (!$this->functions['toolbar'] || !$this->checkTemplate())
+		{
+			return '';
+		}
+
+		// Find session
+		$sessions = [];
+		foreach ($this->app->input->cookie->getArray() as $key => $value)
+		{
+			if (strlen($key) === 32 && strlen($value) === 26)
+			{
+				$sessions[] = $value;
+			}
+		}
+		if (empty($sessions))
+		{
+			return '';
+		}
+
+		// Get user
+		$db      = $this->db;
+		$query   = $db->getQuery(true)
+			->select('userid')
+			->from($db->quoteName('#__session'))
+			->whereIn($db->quoteName('session_id'), $sessions, ParameterType::STRING)
+			->where('client_id = 1')
+			->where('userid > 0');
+		$user_id = (int) $db->setQuery($query, 0, 1)->loadResult();
+		if ($user_id === 0)
+		{
+			return '';
+		}
+		$user = new User($user_id);
+
+		// Check access
+		if (!$user->authorise('core.login.admin'))
+		{
+			return '';
+		}
+		$access = (int) $this->params->get('toolbar_access', 0);
+		if (!empty($access) && !in_array($access, $user->getAuthorisedViewLevels()))
+		{
+			return '';
+		}
+		$return = urldecode($this->app->input->getString('return'));
+
+		// Prepare buttons
+		$buttons = [
+			'customizer'    => [
+				'id'       => 'customizer',
+				'href'     => Route::link('administrator',
+					'index.php?option=com_ajax&p=customizer&format=html'
+					. '&templateStyle=' . $this->app->input->getInt('style_id')
+					. '&site=' . $return
+					. '&return=' . $return),
+				'title'    => Text::_('PLG_SYSTEM_EXTRAPRO_TOOLBAR_CUSTOMIZER'),
+				'icon'     => 'settings',
+				'ordering' => 999,
+			],
+			'administrator' => [
+				'id'       => 'administrator',
+				'href'     => Route::link('administrator', 'index.php'),
+				'title'    => Text::_('PLG_SYSTEM_EXTRAPRO_TOOLBAR_ADMINISTRATOR'),
+				'icon'     => 'joomla',
+				'ordering' => 1000,
+				'target'   => '_blank',
+			],
+		];
+
+		$context = $this->app->input->get('context');
+		$paths   = explode('.', $context);
+		if (!empty($paths[0]))
+		{
+			if ($paths[0] === 'com_content')
+			{
+				if (!empty($paths[1]))
+				{
+					if ($paths[1] === 'article' && !empty($paths[2]))
+					{
+						$buttons['article_builder'] = [
+							'id'       => 'article_builder',
+							'href'     => Route::link('administrator',
+								'index.php?option=com_ajax&p=customizer&section=builder&format=html'
+								. '&templateStyle=' . $this->app->input->getInt('style_id')
+								. '&site=' . $return
+								. '&return=' . $return),
+							'title'    => Text::_('PLG_SYSTEM_EXTRAPRO_TOOLBAR_CONTENT_ARTICLE_BUILDER'),
+							'icon'     => 'uikit',
+							'ordering' => 1,
+						];
+
+						$buttons['article_administrator'] = [
+							'id'       => 'article_administrator',
+							'href'     => Route::link('administrator',
+								'index.php?option=com_content&task=article.edit&id=' . $paths[2]),
+							'title'    => Text::_('PLG_SYSTEM_EXTRAPRO_TOOLBAR_CONTENT_ARTICLE_ADMINISTRATOR'),
+							'icon'     => 'pencil',
+							'target'   => '_blank',
+							'ordering' => 2,
+						];
+					}
+					elseif ($paths[1] === 'category' && !empty($paths[2]) && (int) $paths[2] > 1)
+					{
+						$buttons['category_administrator'] = [
+							'id'       => 'category_administrator',
+							'href'     => Route::link('administrator',
+								'index.php?option=com_categories&task=category.edit&extension=com_content&id='
+								. $paths[2]),
+							'title'    => Text::_('PLG_SYSTEM_EXTRAPRO_TOOLBAR_CONTENT_CATEGORY_ADMINISTRATOR'),
+							'icon'     => 'pencil',
+							'target'   => '_blank',
+							'ordering' => 2,
+						];
+					}
+				}
+			}
+			elseif ($paths[0] === 'com_radicalmart')
+			{
+				if ($paths[1] === 'product' && !empty($paths[2]))
+				{
+					$buttons['product_administrator'] = [
+						'id'       => 'product_administrator',
+						'href'     => Route::link('administrator',
+							'index.php?option=com_radicalmart&task=product.edit&id=' . $paths[2]),
+						'title'    => Text::_('PLG_SYSTEM_EXTRAPRO_TOOLBAR_RADICALMART_PRODUCT_ADMINISTRATOR'),
+						'icon'     => 'pencil',
+						'target'   => '_blank',
+						'ordering' => 2,
+					];
+				}
+				elseif ($paths[1] === 'category' && !empty($paths[2]))
+				{
+					$buttons['product_administrator'] = [
+						'id'       => 'product_administrator',
+						'href'     => Route::link('administrator',
+							'index.php?option=com_radicalmart&task=category.edit&id=' . $paths[2]),
+						'title'    => Text::_('PLG_SYSTEM_EXTRAPRO_TOOLBAR_RADICALMART_CATEGORY_ADMINISTRATOR'),
+						'icon'     => 'pencil',
+						'target'   => '_blank',
+						'ordering' => 2,
+					];
+				}
+			}
+		}
+
+		if (ComponentHelper::isEnabled('com_quantummanager'))
+		{
+			$buttons['quantummanager'] = [
+				'id'       => 'quantummanager',
+				'href'     => Route::link('administrator', 'index.php?option=com_quantummanager'),
+				'title'    => Text::_('PLG_SYSTEM_EXTRAPRO_TOOLBAR_QUANTUMMANAGER'),
+				'icon'     => 'nut',
+				'target'   => '_blank',
+				'ordering' => 998,
+			];
+		}
+
+		// Trigger `onExtraProGetToolbarButtons` event
+		$this->app->triggerEvent('onExtraProGetToolbarButtons', [$context, &$buttons]);
+
+		usort($buttons, function ($a, $b) {
+			return $a['ordering'] <=> $b['ordering'];
+		});
+
+		$displayData = [
+			'buttons'  => $buttons,
+			'position' => $this->params->get('toolbar_position', 'center-right'),
+		];
+
+		return LayoutHelper::render('plugins.system.extrapro.site.toolbar.buttons', $displayData);
 	}
 
 	/**
