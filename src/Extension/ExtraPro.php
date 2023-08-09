@@ -287,27 +287,20 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	/**
 	 * Method to check core child templates functions enabled and fix if need.
 	 *
-	 * @param   bool  $force  Force enabled
+	 * @param   bool  $run  Force enabled
 	 *
 	 * @since __DEPLOY_VERSION__
 	 */
-	protected function enableChildTemplate(bool $force = false)
+	protected function enableChildTemplate(bool $run = false)
 	{
 		if (!$this->functions['child'])
 		{
 			return;
 		}
 
-		$runMethod = $force;
-		if (!$runMethod
-			&& $this->app->isClient('administrator')
-			&& $this->app->input->getCmd('option') !== 'com_templates'
-			&& in_array($this->app->input->getCmd('view'), ['templates', 'template']))
-		{
-			$runMethod = true;
-		}
-
-		if (!$runMethod)
+		if (!$run && !($this->app->isClient('administrator')
+				&& $this->app->input->getCmd('option') === 'com_templates'
+				&& in_array($this->app->input->getCmd('view'), ['templates', 'template'])))
 		{
 			return;
 		}
@@ -321,38 +314,44 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			->where($db->quoteName('type') . ' = ' . $db->quote('template'))
 			->where($db->quoteName('element') . ' = ' . $db->quote('yootheme'));
 		$update = $db->setQuery($query)->loadObject();
-		if (empty($update))
+		if (!empty($update))
 		{
-			return;
+			$update->name = 'yootheme';
+			$db->updateObject('#__extensions', $update, 'extension_id');
 		}
-		$update->name = 'yootheme';
-		$db->updateObject('#__extensions', $update, 'extension_id');
 
 		// Fix xml
-		$filename = Path::clean(JPATH_ROOT . '/templates/yootheme/templateDetails.xml');
-		$xml      = simplexml_load_string(file_get_contents($filename));
+		$updateFile = false;
+		$filename   = Path::clean(JPATH_ROOT . '/templates/yootheme/templateDetails.xml');
+		$xml        = simplexml_load_string(file_get_contents($filename));
 
 		if (isset($xml->element))
 		{
+			$updateFile = true;
 			unset($xml->element);
 		}
 
 		if ((string) $xml->name === 'YOOtheme')
 		{
+			$updateFile   = true;
 			$xml->name[0] = 'yootheme';
 		}
 
 		if (!isset($xml->inheritable))
 		{
+			$updateFile = true;
 			$xml->addChild('inheritable', 1);
 		}
 
-		$dom                     = new \DOMDocument();
-		$dom->preserveWhiteSpace = false;
-		$dom->formatOutput       = true;
-		$dom->loadXML($xml->asXML());
+		if ($updateFile)
+		{
+			$dom                     = new \DOMDocument();
+			$dom->preserveWhiteSpace = false;
+			$dom->formatOutput       = true;
+			$dom->loadXML($xml->asXML());
 
-		file_put_contents($filename, $dom->saveXML());
+			file_put_contents($filename, $dom->saveXML());
+		}
 
 		// Fix previews
 		$srcFolder  = JPATH_ROOT . '/templates/yootheme';

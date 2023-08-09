@@ -62,9 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// Run DOMContentLoaded
 	tab.setAttribute('extrapro-config-load', 'true');
-	if (Joomla.optionsStorage['joomla.messages']) {
-		Joomla.optionsStorage.splice('joomla.messages', 1);
-	}
+	Joomla.optionsStorage['joomla.messages'] = [];
 	document.dispatchEvent(new Event('DOMContentLoaded', {'bubbles': true}));
 
 	// Fancy select fix
