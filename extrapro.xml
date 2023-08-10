@@ -51,8 +51,7 @@
 					<field name="unset_modules" type="radio"
 						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_ENABLE"
 						   class="btn-group btn-group-yesno"
-						   default="0"
-						   readonly="true">
+						   default="0">
 						<option value="1">JYES</option>
 						<option value="0">JNO</option>
 					</field>
@@ -79,11 +78,11 @@
 						<option value="bottom-center">Bottom Center</option>
 						<option value="bottom-right">Bottom Right</option>
 					</field>
-					<field name="toolbar_access" type="accesslevel"
-						   label="JFIELD_ACCESS_LABEL"
+					<field name="toolbar_user_group" type="UserGroupList"
+						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_TOOLBAR_USER_GROUP"
 						   showon="toolbar:1"
 						   default="0">
-						<option value="0">JALL</option>
+						<option value="0">PLG_SYSTEM_EXTRAPRO_PARAMS_TOOLBAR_USER_GROUP_ALL</option>
 					</field>
 				</fieldset>
 				<fieldset name="preview" label="PLG_SYSTEM_EXTRAPRO_PARAMS_PREVIEW"

@@ -13,11 +13,8 @@ namespace Joomla\Plugin\System\ExtraPro\Extension;
 
 \defined('_JEXEC') or die;
 
-use Joomla\CMS\Application\AdministratorApplication;
-use Joomla\CMS\Application\ApplicationHelper;
 use Joomla\CMS\Application\CMSApplication;
 use Joomla\CMS\Component\ComponentHelper;
-use Joomla\CMS\Factory;
 use Joomla\CMS\Filesystem\File;
 use Joomla\CMS\Filesystem\Folder;
 use Joomla\CMS\Filesystem\Path;
@@ -27,7 +24,6 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\Layout\LayoutHelper;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Router\Route;
-use Joomla\CMS\Session\Storage\JoomlaStorage;
 use Joomla\CMS\Toolbar\Button\CustomButton;
 use Joomla\CMS\Toolbar\Toolbar;
 use Joomla\CMS\Uri\Uri;
@@ -35,12 +31,10 @@ use Joomla\CMS\User\User;
 use Joomla\CMS\WebAsset\WebAssetManager;
 use Joomla\Database\DatabaseDriver;
 use Joomla\Database\ParameterType;
-use Joomla\DI\Container;
 use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
 use Joomla\Event\SubscriberInterface;
 use Joomla\Registry\Registry;
-use Joomla\Session\SessionInterface;
 
 class ExtraPro extends CMSPlugin implements SubscriberInterface
 {
@@ -105,6 +99,15 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	protected ?int $_id = null;
 
 	/**
+	 * Administrator user object.
+	 *
+	 * @var User|false|null
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected $_administratorUser = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param   DispatcherInterface  &$subject  The object to observe.
@@ -142,7 +145,10 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			'onAfterInitialise'       => 'onAfterInitialise',
 			'onAfterRoute'            => 'onAfterRoute',
 			'onContentPrepareForm'    => 'onContentPrepareForm',
+			'onAfterCleanModuleList'  => 'onAfterCleanModuleList',
+			'onRenderModule'          => 'onRenderModule',
 			'onBeforeCompileHead'     => 'onBeforeCompileHead',
+			'onPageCacheGetKey'       => 'onPageCacheGetKey',
 			'onAfterRender'           => 'onAfterRender',
 			'onExtensionAfterInstall' => 'onExtensionAfterInstall',
 			'onAjaxExtraPro'          => 'onAjax'
@@ -198,6 +204,65 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		$data     = $event->getArgument(1);
 
 		$this->addPreviewButton($formName, $form, $data);
+		$this->loadModuleForm($formName, $form);
+	}
+
+
+	/**
+	 * Listener for the `onAfterCleanModuleList` event.
+	 *
+	 * @param   Event  $event  The event.
+	 *
+	 * @throws  \Exception
+	 *
+	 * @since  __DEPLOY_VERSION__
+	 */
+	public function onAfterCleanModuleList(Event $event)
+	{
+		if (!$this->functions['unset_modules'] || !$this->checkTemplate())
+		{
+			return;
+		}
+
+		$unset   = false;
+		$modules = $event->getArgument(0);
+		foreach ($modules as $m => $module)
+		{
+			if ($this->isModuleUnset($module))
+			{
+				$unset = true;
+				unset($modules[$m]);
+			}
+		}
+
+		if ($unset)
+		{
+			$event->setArgument(0, array_values($modules));
+		}
+
+	}
+
+	/**
+	 * Listener for the `onAfterCleanModuleList` event.
+	 *
+	 * @param   Event  $event  The event.
+	 *
+	 * @throws  \Exception
+	 *
+	 * @since  __DEPLOY_VERSION__
+	 */
+	public function onRenderModule(Event $event)
+	{
+		if (!$this->functions['unset_modules'] || !$this->checkTemplate())
+		{
+			return;
+		}
+
+		$module = $event->getArgument(0);
+		if ($this->isModuleUnset($module))
+		{
+			$event->setArgument(0, false);
+		}
 	}
 
 	/**
@@ -212,6 +277,39 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		$this->loadConfigWebAsset();
 		$this->addYOOthemeChildOverrides();
 		$this->addSiteToolbar();
+	}
+
+	/**
+	 * Listener for the `onPageCacheGetKey` event.
+	 *
+	 * @throws  \Exception
+	 *
+	 * @since  __DEPLOY_VERSION__
+	 */
+	public function onPageCacheGetKey(Event $event)
+	{
+		$parts = [];
+		if ($this->functions['unset_modules'])
+		{
+			$parts['extrapro_unset_modules'] = ($this->getAdministratorUser()) ? 1 : 0;
+		}
+
+		if (empty($parts))
+		{
+			return;
+		}
+
+		$string = [];
+		foreach ($parts as $key => $part)
+		{
+			$string[] = $key . '=' . $part;
+		}
+		$string = implode('|', $string);
+
+		$result   = $event->getArgument('result', []);
+		$result[] = $string;
+
+		$event->setArgument('result', $result);
 	}
 
 	/**
@@ -291,7 +389,6 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			throw new \Exception($e->getMessage(), $e->getCode(), $e);
 		}
 	}
-
 
 	/**
 	 * Method to check core child templates functions enabled and fix if need.
@@ -886,48 +983,20 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			return '';
 		}
 
-		// Find session
-		$sessions = [];
-		foreach ($this->app->input->cookie->getArray() as $key => $value)
-		{
-			if (strlen($key) === 32 && strlen($value) === 26)
-			{
-				$sessions[] = $value;
-			}
-		}
-		if (empty($sessions))
-		{
-			return '';
-		}
-
-		// Get user
-		$db      = $this->db;
-		$query   = $db->getQuery(true)
-			->select('userid')
-			->from($db->quoteName('#__session'))
-			->whereIn($db->quoteName('session_id'), $sessions, ParameterType::STRING)
-			->where('client_id = 1')
-			->where('userid > 0');
-		$user_id = (int) $db->setQuery($query, 0, 1)->loadResult();
-		if ($user_id === 0)
-		{
-			return '';
-		}
-		$user = new User($user_id);
-
 		// Check access
-		if (!$user->authorise('core.login.admin'))
+		$user = $this->getAdministratorUser();
+		if (!$user)
 		{
 			return '';
 		}
-		$access = (int) $this->params->get('toolbar_access', 0);
-		if (!empty($access) && !in_array($access, $user->getAuthorisedViewLevels()))
+		$group = (int) $this->params->get('toolbar_user_group', 0);
+		if (!empty($access) && !in_array($group, $user->getAuthorisedGroups()))
 		{
 			return '';
 		}
-		$return = urldecode($this->app->input->getString('return'));
 
 		// Prepare buttons
+		$return  = urldecode($this->app->input->getString('return'));
 		$buttons = [
 			'customizer'    => [
 				'id'       => 'customizer',
@@ -1066,5 +1135,135 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		$assets->getRegistry()->addExtensionRegistryFile('plg_system_extrapro');
 
 		return $assets;
+	}
+
+	/**
+	 * Check is need unset module.
+	 *
+	 * @param   mixed  $module  The module object.
+	 *
+	 * @return bool True if need unset, False if not.
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected function isModuleUnset($module): bool
+	{
+		if (!$this->functions['unset_modules'])
+		{
+			return false;
+		}
+
+		if (!is_object($module))
+		{
+			return true;
+		}
+
+		$params = ($module->params instanceof Registry) ? $module->params : new Registry($module->params);
+		if (!empty($params->get('extrapro_unset_modules_components')))
+		{
+			$values = (new Registry($params->get('extrapro_unset_modules_components')))->toArray();
+
+			$option = $this->app->input->getCmd('option');
+			if (in_array($option, $values))
+			{
+				return true;
+			}
+
+			$view = $option . '.' . $this->app->input->getCmd('view');
+			if (in_array($view, $values))
+			{
+				return true;
+			}
+
+			$layout = $view . '.' . $this->app->input->getCmd('layout', 'default');
+			if (in_array($layout, $values))
+			{
+				return true;
+			}
+		}
+
+		if ((int) $params->get('extrapro_unset_modules_administrator') === 1 && $this->getAdministratorUser())
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Method to get current login administrator user object.
+	 *
+	 * @return User|false Administrator user object if found, False if not.
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected function getAdministratorUser()
+	{
+		if ($this->_administratorUser === null)
+		{
+			$this->_administratorUser = false;
+
+			$sessions = [];
+			foreach ($this->app->input->cookie->getArray() as $key => $value)
+			{
+				if (strlen($key) === 32 && strlen($value) === 26)
+				{
+					$sessions[] = $value;
+				}
+			}
+			if (empty($sessions))
+			{
+				return false;
+			}
+
+			$db         = $this->db;
+			$query      = $db->getQuery(true)
+				->select('userid')
+				->from($db->quoteName('#__session'))
+				->whereIn($db->quoteName('session_id'), $sessions, ParameterType::STRING)
+				->where('client_id = 1')
+				->where('userid > 0');
+			$identifier = (int) $db->setQuery($query, 0, 1)->loadResult();
+
+			if ($identifier === 0)
+			{
+				return $this->_administratorUser;
+			}
+			$user = new User($identifier);
+
+			if (empty($user->id))
+			{
+				return $this->_administratorUser;
+			}
+
+			if (!$user->authorise('core.login.admin'))
+			{
+				return $this->_administratorUser;
+			}
+
+			$this->_administratorUser = $user;
+		}
+
+		return $this->_administratorUser;
+	}
+
+	/**
+	 * Method load administrator module form.
+	 *
+	 * @param   string  $formName  The form name.
+	 * @param   Form    $form      The form to be altered.
+	 *
+	 * @throws \Exception
+	 *
+	 * @since  __DEPLOY_VERSION__
+	 */
+	protected function loadModuleForm(string $formName, Form $form)
+	{
+		if (!$this->functions['unset_modules'] || $formName !== 'com_modules.module')
+		{
+			return;
+		}
+
+		$form->loadFile(JPATH_PLUGINS . '/system/extrapro/forms/com_modules.module.xml');
 	}
 }
