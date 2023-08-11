@@ -21,6 +21,7 @@ use Joomla\CMS\Installer\InstallerAdapter;
 use Joomla\CMS\Installer\InstallerScriptInterface;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Log\Log;
+use Joomla\CMS\Router\Route;
 use Joomla\CMS\Version;
 use Joomla\Database\DatabaseDriver;
 use Joomla\DI\Container;
@@ -102,8 +103,6 @@ return new class () implements ServiceProviderInterface {
 			public function install(InstallerAdapter $adapter): bool
 			{
 				$this->enablePlugin($adapter);
-
-				Factory::getApplication()->enqueueMessage(Text::_('PLG_SYSTEM_EXTRAPRO_AFTER_INSTALL'), 'notice');
 
 				return true;
 			}
@@ -187,6 +186,8 @@ return new class () implements ServiceProviderInterface {
 				{
 					// Parse layouts
 					$this->parseLayouts($installer->getManifest()->layouts, $installer);
+
+					$this->postInstallMessage();
 				}
 				else
 				{
@@ -355,6 +356,31 @@ return new class () implements ServiceProviderInterface {
 				}
 
 				return true;
+			}
+
+			/**
+			 * Method to display post install message.
+			 *
+			 * @since __DEPLOY_VERSION__
+			 */
+			protected function postInstallMessage()
+			{
+				$db           = $this->db;
+				$query        = $db->getQuery(true)
+					->select('extension_id')
+					->from($db->quoteName('#__extensions'))
+					->where($db->quoteName('type') . ' = ' . $db->quote('plugin'))
+					->where($db->quoteName('folder') . ' = ' . $db->quote('system'))
+					->where($db->quoteName('element') . ' = ' . $db->quote('extrapro'));
+				$extension_id = $db->setQuery($query, 0, 1)->loadResult();
+
+				if (!empty($extension_id))
+				{
+					$link = Route::link('administrator',
+						'index.php?option=com_plugins&task=plugin.edit&extension_id=' . $extension_id . '#attrib-params');
+
+					Factory::getApplication()->enqueueMessage(Text::sprintf('PLG_SYSTEM_EXTRAPRO_AFTER_INSTALL', $link), 'notice');
+				}
 			}
 		});
 	}
