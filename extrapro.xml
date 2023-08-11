@@ -95,6 +95,39 @@
 						<option value="0">JNO</option>
 					</field>
 				</fieldset>
+				<fieldset name="optimization" label="PLG_SYSTEM_EXTRAPRO_PARAMS_OPTIMIZATION"
+						  description="PLG_SYSTEM_EXTRAPRO_PARAMS_OPTIMIZATION_DESC">
+					<field name="optimization" type="radio"
+						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_ENABLE"
+						   class="btn-group btn-group-yesno"
+						   default="0">
+						<option value="1">JYES</option>
+						<option value="0">JNO</option>
+					</field>
+					<field name="optimization_items" type="subform"
+						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_OPTIMIZATION_ITEMS"
+						   multiple="true"
+						   showon="optimization:1"
+						   parentclass="stack"
+						   labelclass="mb-1">
+						<form>
+							<field name="type" type="list"
+								   label="PLG_SYSTEM_EXTRAPRO_PARAMS_OPTIMIZATION_TYPE"
+								   default="script">
+								<option value="script">PLG_SYSTEM_EXTRAPRO_PARAMS_OPTIMIZATION_TYPE_SCRIPT</option>
+								<option value="stylesheet">PLG_SYSTEM_EXTRAPRO_PARAMS_OPTIMIZATION_TYPE_STYLESHEET</option>
+							</field>
+							<field name="source" type="text"
+								   label="PLG_SYSTEM_EXTRAPRO_PARAMS_OPTIMIZATION_SOURCE"/>
+							<field name="action" type="list"
+								   label="PLG_SYSTEM_EXTRAPRO_PARAMS_OPTIMIZATION_ACTION"
+								   default="remove">
+								<option value="remove">PLG_SYSTEM_EXTRAPRO_PARAMS_OPTIMIZATION_ACTION_REMOVE</option>
+								<option value="footer">PLG_SYSTEM_EXTRAPRO_PARAMS_OPTIMIZATION_ACTION_FOOTER</option>
+							</field>
+						</form>
+					</field>
+				</fieldset>
 			</fieldset>
 		</fields>
 	</config>

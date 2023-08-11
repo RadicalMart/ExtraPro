@@ -78,6 +78,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		'unset_modules' => false,
 		'toolbar'       => false,
 		'preview'       => false,
+		'optimization'  => false,
 	];
 
 	/**
@@ -325,8 +326,14 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		{
 			if ($this->checkTemplate() && $this->app->input->getCmd('format', 'html') === 'html')
 			{
+				if (!$this->functions['images'] && !$this->functions['optimization'])
+				{
+					return;
+				}
+
 				$body = $this->app->getBody();
 				$this->convertImages($body);
+				$this->optimization($body);
 
 				$this->app->setBody($body);
 			}
@@ -1265,5 +1272,91 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		}
 
 		$form->loadFile(JPATH_PLUGINS . '/system/extrapro/forms/com_modules.module.xml');
+	}
+
+	/**
+	 * Method to convert site images.
+	 *
+	 * @param   string  $body  Current page html.
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected function optimization(string &$body = '')
+	{
+		if (!$this->functions['optimization'])
+		{
+			return;
+		}
+
+		$items = (new Registry($this->params->get('optimization_items')))->toArray();
+		if (empty($items))
+		{
+			return;
+		}
+
+		if (!preg_match('|<head>(.*)</head>|si', $body, $matches))
+		{
+			return;
+		}
+
+		$search  = $matches[1];
+		$replace = $search;
+		$footer  = [];
+
+		$needReplace = false;
+		foreach ($items as $item)
+		{
+			if (empty($item['source']))
+			{
+				continue;
+			}
+
+			$source = str_replace('/', '\\/', $item['source']);
+			if ($item['type'] === 'script')
+			{
+				preg_match_all('#<script.*src=".*' . $source . '.*".*<\/script>#i', $search, $find);
+			}
+			else
+			{
+				preg_match_all('#<link.*href=".*' . $source . '.*".*rel="stylesheet".*/>#i', $search, $find);
+			}
+
+			if (empty($find) || empty($find[0]))
+			{
+				continue;
+			}
+
+			foreach ($find[0] as $value)
+			{
+				if ($item['action'] === 'footer')
+				{
+					$footer[] = $value;
+				}
+				$needReplace = true;
+				$replace     = str_replace($value, '', $replace);
+			}
+		}
+
+		if (!$needReplace)
+		{
+			return;
+		}
+
+		$lines = explode(PHP_EOL, $replace);
+		foreach ($lines as $l => $line)
+		{
+			if (empty(trim($line)))
+			{
+				unset($lines[$l]);
+			}
+		}
+		$replace = implode(PHP_EOL, $lines);
+		$body    = str_replace($search, $replace, $body);
+
+		if (!empty($footer))
+		{
+			$footer = PHP_EOL . implode(PHP_EOL, $footer);
+			$body   = str_replace('</body>', PHP_EOL . $footer . PHP_EOL . '</body>', $body);
+		}
 	}
 }
