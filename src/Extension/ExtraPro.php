@@ -1213,7 +1213,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			$sessions = [];
 			foreach ($this->app->input->cookie->getArray() as $key => $value)
 			{
-				if (strlen($key) === 32 && strlen($value) === 26)
+				if (strlen($key) === 32)
 				{
 					$sessions[] = $value;
 				}
