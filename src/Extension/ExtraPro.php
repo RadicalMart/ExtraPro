@@ -73,12 +73,13 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 * @since __DEPLOY_VERSION__
 	 */
 	protected array $functions = [
-		'child'         => false,
-		'images'        => false,
-		'unset_modules' => false,
-		'toolbar'       => false,
-		'preview'       => false,
-		'optimization'  => false,
+		'child'             => false,
+		'images'            => false,
+		'unset_modules'     => false,
+		'toolbar'           => false,
+		'preview'           => false,
+		'optimization'      => false,
+		'correct_custom_js' => false,
 	];
 
 	/**
@@ -326,7 +327,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		{
 			if ($this->checkTemplate() && $this->app->input->getCmd('format', 'html') === 'html')
 			{
-				if (!$this->functions['images'] && !$this->functions['optimization'])
+				if (!$this->functions['images'] && !$this->functions['optimization'] && !$this->functions['correct_custom_js'])
 				{
 					return;
 				}
@@ -334,6 +335,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 				$body = $this->app->getBody();
 				$this->convertImages($body);
 				$this->optimization($body);
+				$this->correctCustomJS($body);
 
 				$this->app->setBody($body);
 			}
@@ -1358,5 +1360,35 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			$footer = PHP_EOL . implode(PHP_EOL, $footer);
 			$body   = str_replace('</body>', PHP_EOL . $footer . PHP_EOL . '</body>', $body);
 		}
+	}
+
+	/**
+	 * Correct template custom.js src.
+	 *
+	 * @param   string  $body  Current page html.
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected function correctCustomJS(string &$body = '')
+	{
+		if (!$this->functions['correct_custom_js'])
+		{
+			return;
+		}
+
+		$pattern = '/<script src="(\/templates\/(yootheme(?:_[^\/]+)?)\/js\/custom\.js(?:\?[^"]*)?)">/';
+		preg_match($pattern, $body, $matches);
+		if (empty($matches) || empty($matches[1]) || empty($matches[2]))
+		{
+			return;
+		}
+
+		$mediaVersion = $this->app->getDocument()->getMediaVersion();
+		$src          = HTMLHelper::script('templates/' . $matches[2] . '/js/custom.js', [
+			'pathOnly' => true,
+			'relative' => false,
+		], ['version' => 'auto']);
+		$src          .= (strpos($src, '?') === false) ? '?' . $mediaVersion : '&' . $mediaVersion;
+		$body         = str_replace($matches[1], $src, $body);
 	}
 }
