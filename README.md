@@ -34,5 +34,5 @@ This feature allows you to cut or move scripts and styles from `<head>; to the f
 
 **Use at your own risk!**
 
-### Removal of Political Statements
+### Remove Political Statement
 This function removes political statements from the Joomla source code.
