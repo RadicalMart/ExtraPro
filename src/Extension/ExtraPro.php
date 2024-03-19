@@ -13,7 +13,6 @@ namespace Joomla\Plugin\System\ExtraPro\Extension;
 
 \defined('_JEXEC') or die;
 
-use Joomla\CMS\Application\CMSApplication;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Filesystem\File;
 use Joomla\CMS\Filesystem\Folder;
@@ -46,15 +45,6 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 * @since  1.0.0
 	 */
 	protected $autoloadLanguage = true;
-
-	/**
-	 * Loads the application object.
-	 *
-	 * @var  CMSApplication
-	 *
-	 * @since  1.0.0
-	 */
-	protected $app = null;
 
 	/**
 	 * Loads the database object.
@@ -326,21 +316,22 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 */
 	public function onAfterRender()
 	{
-		if ($this->app->isClient('site'))
+		$app = $this->getApplication();
+		if ($app->isClient('site'))
 		{
-			if ($this->checkTemplate() && $this->app->input->getCmd('format', 'html') === 'html')
+			if ($this->checkTemplate() && $app->input->getCmd('format', 'html') === 'html')
 			{
 				if (!$this->functions['images'] && !$this->functions['optimization'] && !$this->functions['correct_custom_js'])
 				{
 					return;
 				}
 
-				$body = $this->app->getBody();
+				$body = $app->getBody();
 				$this->convertImages($body);
 				$this->optimization($body);
 				$this->correctCustomJS($body);
 
-				$this->app->setBody($body);
+				$app->setBody($body);
 			}
 		}
 	}
@@ -385,7 +376,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	{
 		try
 		{
-			$action = $this->app->input->get('action');
+			$action = $this->getApplication()->input->get('action');
 			$method = $action;
 			if (empty($action) || !method_exists($this, $method))
 			{
@@ -451,9 +442,10 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			return;
 		}
 
-		if (!$run && !($this->app->isClient('administrator')
-				&& $this->app->input->getCmd('option') === 'com_templates'
-				&& in_array($this->app->input->getCmd('view'), ['templates', 'template'])))
+		$app = $this->getApplication();
+		if (!$run && !($app->isClient('administrator')
+				&& $app->input->getCmd('option') === 'com_templates'
+				&& in_array($app->input->getCmd('view'), ['templates', 'template'])))
 		{
 			return;
 		}
@@ -642,14 +634,15 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	{
 		if ($this->isYOOtheme === null)
 		{
-			if (!$this->app->isClient('site'))
+			$app = $this->getApplication();
+			if (!$app->isClient('site'))
 			{
 				$this->isYOOtheme = false;
 
 				return false;
 			}
 
-			$template         = $this->app->getTemplate(true);
+			$template         = $app->getTemplate(true);
 			$this->isYOOtheme = (!empty($template->parent)) ?
 				($template->parent === 'yootheme') : $template->template === 'yootheme';
 		}
@@ -666,10 +659,11 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 */
 	protected function loadConfigWebAsset()
 	{
-		if ($this->app->isClient('administrator')
-			&& $this->app->input->getCmd('option') === 'com_plugins'
-			&& $this->app->input->getCmd('view') === 'plugin'
-			&& $this->app->input->getInt('extension_id') === $this->_id)
+		$app = $this->getApplication();
+		if ($app->isClient('administrator')
+			&& $app->input->getCmd('option') === 'com_plugins'
+			&& $app->input->getCmd('view') === 'plugin'
+			&& $app->input->getInt('extension_id') === $this->_id)
 		{
 			$this->getWebAssetManager()->useScript('plg_system_extrapro.administrator.config');
 		}
@@ -688,7 +682,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 */
 	protected function addPreviewButton(string $formName, Form $form, $data = [])
 	{
-		if (!$this->functions['preview'] || !$this->app->isClient('administrator') || !is_object($data))
+		if (!$this->functions['preview'] || !$this->getApplication()->isClient('administrator') || !is_object($data))
 		{
 			return;
 		}
@@ -743,16 +737,17 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 */
 	protected function addYOOthemeChildOverrides()
 	{
+		$app = $this->getApplication();
 		if (!$this->functions['child']
-			|| !$this->app->isClient('administrator')
-			|| $this->app->input->getCmd('option') !== 'com_templates'
-			|| $this->app->input->getCmd('view') !== 'template'
+			|| !$app->isClient('administrator')
+			|| $app->input->getCmd('option') !== 'com_templates'
+			|| $app->input->getCmd('view') !== 'template'
 		)
 		{
 			return;
 		}
 
-		$eid      = $this->app->input->getInt('id');
+		$eid      = $app->input->getInt('id');
 		$db       = $this->db;
 		$query    = $db->getQuery(true)
 			->select('manifest_cache')
@@ -773,7 +768,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 
 		$assets = $this->getWebAssetManager();
 		$assets->useScript('plg_system_extrapro.administrator.overrides');
-		$this->app->getDocument()->addScriptOptions('extrapro_overrides', [
+		$app->getDocument()->addScriptOptions('extrapro_overrides', [
 			'controller'   => Route::link('administrator',
 				'index.php?option=com_ajax&plugin=ExtraPro&group=system&format=json', false),
 			'extension_id' => $eid,
@@ -798,7 +793,8 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			return $result;
 		}
 
-		if (!$this->app->isClient('administrator') || !$this->app->getIdentity()->authorise('core.admin'))
+		$app = $this->getApplication();
+		if (!$app->isClient('administrator') || !$app->getIdentity()->authorise('core.admin'))
 		{
 			return $result;
 		}
@@ -887,18 +883,19 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FUNCTION_DISABLE'), 403);
 		}
 
-		if (!$this->app->isClient('administrator') || !$this->app->getIdentity()->authorise('core.admin'))
+		$app = $this->getApplication();
+		if (!$app->isClient('administrator') || !$app->getIdentity()->authorise('core.admin'))
 		{
 			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_ACCESS_DENIED'), 403);
 		}
 
-		$file = $this->app->input->getBase64('file');
+		$file = $app->input->getBase64('file');
 		if (empty($file))
 		{
 			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FILE_NOT_FOUND'), 404);
 		}
 
-		$eid       = $this->app->input->getInt('template_id');
+		$eid       = $app->input->getInt('template_id');
 		$db        = $this->db;
 		$query     = $db->getQuery(true)
 			->select(['element', 'manifest_cache'])
@@ -960,9 +957,9 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		}
 
 		$redirect = Route::link('administrator', 'index.php?option=com_templates&view=template&id=' . $eid, false);
-		$this->app->enqueueMessage(Text::sprintf('PLG_SYSTEM_EXTRAPRO_OVERRIDE_CREATED',
+		$app->enqueueMessage(Text::sprintf('PLG_SYSTEM_EXTRAPRO_OVERRIDE_CREATED',
 			str_replace(JPATH_ROOT, '', $dest)));
-		$this->app->redirect($redirect);
+		$app->redirect($redirect);
 	}
 
 	/**
@@ -978,9 +975,10 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		}
 
 		$context = '';
-		$option  = $this->app->input->get('option');
-		$view    = $this->app->input->get('view');
-		$id      = $this->app->input->getInt('id');
+		$app     = $this->getApplication();
+		$option  = $app->input->get('option');
+		$view    = $app->input->get('view');
+		$id      = $app->input->getInt('id');
 		if ($option === 'com_content')
 		{
 			if ($view === 'article')
@@ -1005,11 +1003,11 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		}
 
 		// Trigger `onExtraProGetToolbarContext` event
-		$this->app->triggerEvent('onExtraProGetToolbarContext', [&$context]);
+		$app->triggerEvent('onExtraProGetToolbarContext', [&$context]);
 
 		$assets = $this->getWebAssetManager();
 		$assets->useScript('plg_system_extrapro.site.toolbar');
-		$this->app->getDocument()->addScriptOptions('extrapro_toolbar', [
+		$app->getDocument()->addScriptOptions('extrapro_toolbar', [
 			'controller' => Route::link('site',
 				'index.php?option=com_ajax&plugin=ExtraPro&group=system&format=json', false),
 			'context'    => $context,
@@ -1043,13 +1041,14 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		}
 
 		// Prepare buttons
-		$return  = urldecode($this->app->input->getString('return'));
+		$app     = $this->getApplication();
+		$return  = urldecode($app->input->getString('return'));
 		$buttons = [
 			'customizer'    => [
 				'id'       => 'customizer',
 				'href'     => Route::link('administrator',
 					'index.php?option=com_ajax&p=customizer&format=html'
-					. '&templateStyle=' . $this->app->input->getInt('style_id')
+					. '&templateStyle=' . $app->input->getInt('style_id')
 					. '&site=' . $return
 					. '&return=' . $return),
 				'title'    => Text::_('PLG_SYSTEM_EXTRAPRO_TOOLBAR_CUSTOMIZER'),
@@ -1066,7 +1065,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			],
 		];
 
-		$context = $this->app->input->get('context');
+		$context = $app->input->get('context');
 		$paths   = explode('.', $context);
 		if (!empty($paths[0]))
 		{
@@ -1080,7 +1079,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 							'id'       => 'article_builder',
 							'href'     => Route::link('administrator',
 								'index.php?option=com_ajax&p=customizer&section=builder&format=html'
-								. '&templateStyle=' . $this->app->input->getInt('style_id')
+								. '&templateStyle=' . $app->input->getInt('style_id')
 								. '&site=' . $return
 								. '&return=' . $return),
 							'title'    => Text::_('PLG_SYSTEM_EXTRAPRO_TOOLBAR_CONTENT_ARTICLE_BUILDER'),
@@ -1155,7 +1154,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		}
 
 		// Trigger `onExtraProGetToolbarButtons` event
-		$this->app->triggerEvent('onExtraProGetToolbarButtons', [$context, &$buttons]);
+		$app->triggerEvent('onExtraProGetToolbarButtons', [$context, &$buttons]);
 
 		usort($buttons, function ($a, $b) {
 			return $a['ordering'] <=> $b['ordering'];
@@ -1178,7 +1177,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 */
 	protected function getWebAssetManager(): WebAssetManager
 	{
-		$assets = $this->app->getDocument()->getWebAssetManager();
+		$assets = $this->getApplication()->getDocument()->getWebAssetManager();
 		$assets->getRegistry()->addExtensionRegistryFile('plg_system_extrapro');
 
 		return $assets;
@@ -1210,19 +1209,20 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		{
 			$values = (new Registry($params->get('extrapro_unset_modules_components')))->toArray();
 
-			$option = $this->app->input->getCmd('option');
+			$app    = $this->getApplication();
+			$option = $app->input->getCmd('option');
 			if (in_array($option, $values))
 			{
 				return true;
 			}
 
-			$view = $option . '.' . $this->app->input->getCmd('view');
+			$view = $option . '.' . $app->input->getCmd('view');
 			if (in_array($view, $values))
 			{
 				return true;
 			}
 
-			$layout = $view . '.' . $this->app->input->getCmd('layout', 'default');
+			$layout = $view . '.' . $app->input->getCmd('layout', 'default');
 			if (in_array($layout, $values))
 			{
 				return true;
@@ -1251,7 +1251,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			$this->_administratorUser = false;
 
 			$sessions = [];
-			foreach ($this->app->input->cookie->getArray() as $key => $value)
+			foreach ($this->getApplication()->input->cookie->getArray() as $key => $value)
 			{
 				if (strlen($key) === 32)
 				{
@@ -1421,7 +1421,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			return;
 		}
 
-		$mediaVersion = $this->app->getDocument()->getMediaVersion();
+		$mediaVersion = $this->getApplication()->getDocument()->getMediaVersion();
 		$src          = HTMLHelper::script('templates/' . $matches[2] . '/js/custom.js', [
 			'pathOnly' => true,
 			'relative' => false,

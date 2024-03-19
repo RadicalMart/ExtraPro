@@ -32,11 +32,14 @@ return new class implements ServiceProviderInterface {
 	{
 		$container->set(PluginInterface::class,
 			function (Container $container) {
+				// Create plugin class
 				$plugin  = PluginHelper::getPlugin('system', 'extrapro');
 				$subject = $container->get(DispatcherInterface::class);
+				$plugin  = new ExtraPro($subject, (array) $plugin);
 
-				$plugin = new ExtraPro($subject, (array) $plugin);
-				$plugin->setApplication(Factory::getApplication());
+				// Set application
+				$app = Factory::getApplication();
+				$plugin->setApplication($app);
 
 				return $plugin;
 			}
