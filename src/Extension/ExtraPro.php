@@ -73,13 +73,14 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 * @since __DEPLOY_VERSION__
 	 */
 	protected array $functions = [
-		'child'             => false,
-		'images'            => false,
-		'unset_modules'     => false,
-		'toolbar'           => false,
-		'preview'           => false,
-		'optimization'      => false,
-		'correct_custom_js' => false,
+		'child'                       => false,
+		'images'                      => false,
+		'unset_modules'               => false,
+		'toolbar'                     => false,
+		'preview'                     => false,
+		'optimization'                => false,
+		'correct_custom_js'           => false,
+		'remove_political_statements' => true,
 	];
 
 	/**
@@ -128,9 +129,9 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		}
 
 		// Set wish functions enabled
-		foreach (array_keys($this->functions) as $name)
+		foreach ($this->functions as $name => $default)
 		{
-			$this->functions[$name] = ((int) $this->params->get($name) === 1);
+			$this->functions[$name] = ((int) $this->params->get($name, ($default) ? 1 : 0) === 1);
 		}
 	}
 
@@ -167,6 +168,8 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 
 	public function onAfterInitialise()
 	{
+		$this->removePoliticalStatements();
+
 		// Check if YOOtheme Pro is loaded
 		if (!class_exists(\YOOtheme\Application::class, false))
 		{
@@ -396,6 +399,41 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		catch (\Exception $e)
 		{
 			throw new \Exception($e->getMessage(), $e->getCode(), $e);
+		}
+	}
+
+	/**
+	 * Method to remove political statements from Joomla core source code files.
+	 *
+	 * @since __DEPLOY_VERSION__
+	 */
+	protected function removePoliticalStatements()
+	{
+		if (!$this->functions['remove_political_statements'])
+		{
+			return;
+		}
+
+		$files = [
+			JPATH_ROOT . '/libraries/vendor/voku/portable-ascii/src/voku/helper/ASCII.php',
+			JPATH_ROOT . '/libraries/vendor/voku/portable-utf8/src/voku/helper/UTF8.php',
+		];
+
+		foreach ($files as $path)
+		{
+			$path = Path::clean($path);
+			if (is_file($path))
+			{
+				$contents = file_get_contents($path);
+				if (strpos($contents, 'To people') !== false)
+				{
+					$pattern     = '/(namespace voku\\\\helper;\\s*\\/\\*\\*).*?(\\* @(psalm-immutable|immutable)\\s*\\*\\/\\s*final class)/s';
+					$replacement = '$1' . PHP_EOL . ' $2';
+					$contents    = preg_replace($pattern, $replacement, $contents);
+
+					file_put_contents($path, $contents);
+				}
+			}
 		}
 	}
 

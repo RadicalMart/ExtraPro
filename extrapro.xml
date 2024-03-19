@@ -2,7 +2,7 @@
 <extension type="plugin" group="system" method="upgrade">
 	<name>PLG_SYSTEM_EXTRAPRO</name>
 	<author>RadicalMart Team</author>
-	<creationDate>August 2023</creationDate>
+	<creationDate>March 2024</creationDate>
 	<copyright>Copyright (c) 2023 RadicalMart. All rights reserved.</copyright>
 	<license>https://www.gnu.org/copyleft/gpl.html GNU/GPL</license>
 	<authorEmail>info@radicalmart.ru</authorEmail>
@@ -137,6 +137,17 @@
 								<option value="footer">PLG_SYSTEM_EXTRAPRO_PARAMS_OPTIMIZATION_ACTION_FOOTER</option>
 							</field>
 						</form>
+					</field>
+				</fieldset>
+				<fieldset name="remove_political_statements"
+						  label="PLG_SYSTEM_EXTRAPRO_PARAMS_REMOVE_POLITICAL_STATEMENTS"
+						  description="PLG_SYSTEM_EXTRAPRO_PARAMS_REMOVE_POLITICAL_STATEMENTS_DESC">
+					<field name="remove_political_statements" type="radio"
+						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_ENABLE"
+						   class="btn-group btn-group-yesno"
+						   default="1">
+						<option value="1">JYES</option>
+						<option value="0">JNO</option>
 					</field>
 				</fieldset>
 			</fieldset>
