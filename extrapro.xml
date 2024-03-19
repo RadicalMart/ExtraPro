@@ -7,7 +7,7 @@
 	<license>https://www.gnu.org/copyleft/gpl.html GNU/GPL</license>
 	<authorEmail>info@radicalmart.ru</authorEmail>
 	<authorUrl>https://radicalmart.ru/</authorUrl>
-	<version>1.0.0</version>
+	<version>1.0.1-dev</version>
 	<description>PLG_SYSTEM_EXTRAPRO_DESCRIPTION</description>
 	<scriptfile>script.php</scriptfile>
 	<namespace path="src">Joomla\Plugin\System\ExtraPro</namespace>
