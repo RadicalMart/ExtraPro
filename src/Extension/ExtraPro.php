@@ -2,9 +2,9 @@
 /*
  * @package     ExtraPro Plugin
  * @subpackage  plg_system_extrapro
- * @version     __DEPLOY_VERSION__
+ * @version     1.0.0
  * @author      RadicalMart Team - radicalmart.ru
- * @copyright   Copyright (c) 2023 RadicalMart. All rights reserved.
+ * @copyright   Copyright (c) 2024 RadicalMart. All rights reserved.
  * @license     GNU/GPL license: https://www.gnu.org/copyleft/gpl.html
  * @link        https://radicalmart.ru/
  */
@@ -43,7 +43,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @var    bool
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	protected $autoloadLanguage = true;
 
@@ -52,7 +52,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @var  CMSApplication
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	protected $app = null;
 
@@ -61,7 +61,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @var  DatabaseDriver
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	protected $db = null;
 
@@ -70,7 +70,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @var array|bool[]
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected array $functions = [
 		'child'                       => false,
@@ -88,7 +88,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @var bool|null
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected ?bool $isYOOtheme = null;
 
@@ -97,7 +97,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @var    int|null
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	protected ?int $_id = null;
 
@@ -106,7 +106,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @var User|false|null
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected $_administratorUser = null;
 
@@ -116,7 +116,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 * @param   DispatcherInterface  &$subject  The object to observe.
 	 * @param   array                 $config   An optional associative array of configuration settings.
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	public function __construct(&$subject, $config = [])
 	{
@@ -140,7 +140,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @return  array
 	 *
-	 * @since   __DEPLOY_VERSION__
+	 * @since   1.0.0
 	 */
 	public static function getSubscribedEvents(): array
 	{
@@ -163,7 +163,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws  \Exception
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 
 	public function onAfterInitialise()
@@ -185,7 +185,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws  \Exception
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	public function onAfterRoute()
 	{
@@ -199,7 +199,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws  \Exception
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	public function onContentPrepareForm(Event $event)
 	{
@@ -220,7 +220,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws  \Exception
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	public function onAfterCleanModuleList(Event $event)
 	{
@@ -254,7 +254,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws  \Exception
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	public function onRenderModule(Event $event)
 	{
@@ -275,7 +275,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws  \Exception
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	public function onBeforeCompileHead()
 	{
@@ -289,7 +289,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws  \Exception
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	public function onPageCacheGetKey(Event $event)
 	{
@@ -322,7 +322,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws  \Exception
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	public function onAfterRender()
 	{
@@ -350,7 +350,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @param   Event  $event  The event.
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	public function onExtensionAfterInstall(Event $event)
 	{
@@ -379,7 +379,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws  \Exception
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	public function onAjax(Event $event)
 	{
@@ -405,7 +405,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	/**
 	 * Method to remove political statements from Joomla core source code files.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function removePoliticalStatements()
 	{
@@ -442,7 +442,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @param   bool  $run  Force enabled
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function enableChildTemplate(bool $run = false)
 	{
@@ -530,7 +530,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @param   string  $body  Current page html.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function convertImages(string &$body = '')
 	{
@@ -636,7 +636,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @return bool True if is, False if not.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function checkTemplate(): bool
 	{
@@ -662,7 +662,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws  \Exception
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	protected function loadConfigWebAsset()
 	{
@@ -684,7 +684,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws \Exception
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	protected function addPreviewButton(string $formName, Form $form, $data = [])
 	{
@@ -739,7 +739,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	/**
 	 * Method to add YOOtheme overrides to child templates.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function addYOOthemeChildOverrides()
 	{
@@ -787,7 +787,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @return string Overrides files tree.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function getOverridesHtml(): string
 	{
@@ -821,7 +821,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @return array Overrides files tree.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function getOverrides(?string $path = null, array &$result = []): array
 	{
@@ -878,7 +878,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws \Exception
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function createOverride()
 	{
@@ -968,7 +968,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	/**
 	 * Method to add site toolbar script.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function addSiteToolbar()
 	{
@@ -1021,7 +1021,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @return string Site toolbar html.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function getToolbarHtml(): string
 	{
@@ -1174,7 +1174,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @return WebAssetManager Joomla WebAsset Manager.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function getWebAssetManager(): WebAssetManager
 	{
@@ -1191,7 +1191,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @return bool True if need unset, False if not.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function isModuleUnset($module): bool
 	{
@@ -1242,7 +1242,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @return User|false Administrator user object if found, False if not.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function getAdministratorUser()
 	{
@@ -1302,7 +1302,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @throws \Exception
 	 *
-	 * @since  __DEPLOY_VERSION__
+	 * @since  1.0.0
 	 */
 	protected function loadModuleForm(string $formName, Form $form)
 	{
@@ -1319,7 +1319,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @param   string  $body  Current page html.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function optimization(string &$body = '')
 	{
@@ -1405,7 +1405,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @param   string  $body  Current page html.
 	 *
-	 * @since __DEPLOY_VERSION__
+	 * @since 1.0.0
 	 */
 	protected function correctCustomJS(string &$body = '')
 	{

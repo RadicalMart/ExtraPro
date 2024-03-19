@@ -1,9 +1,9 @@
 /*
  * @package     ExtraPro Plugin
  * @subpackage  plg_system_extrapro
- * @version     __DEPLOY_VERSION__
+ * @version     1.0.0
  * @author      RadicalMart Team - radicalmart.ru
- * @copyright   Copyright (c) 2023 RadicalMart. All rights reserved.
+ * @copyright   Copyright (c) 2024 RadicalMart. All rights reserved.
  * @license     GNU/GPL license: https://www.gnu.org/copyleft/gpl.html
  * @link        https://radicalmart.ru/
  */
@@ -13,9 +13,9 @@
 /*
  * @package     ExtraPro Plugin
  * @subpackage  plg_system_extrapro
- * @version     __DEPLOY_VERSION__
+ * @version     1.0.0
  * @author      RadicalMart Team - radicalmart.ru
- * @copyright   Copyright (c) 2023 RadicalMart. All rights reserved.
+ * @copyright   Copyright (c) 2024 RadicalMart. All rights reserved.
  * @license     GNU/GPL license: https://www.gnu.org/copyleft/gpl.html
  * @link        https://radicalmart.ru/
  */
