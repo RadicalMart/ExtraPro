@@ -1,0 +1,39 @@
+{
+	"$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
+	"name": "plg_system_extrapro",
+	"version": "0.0.7-dev",
+	"description": "YOOtheme Pro Enhancement Plugin",
+	"license": "GPL-3.0-or-later",
+	"assets": [
+		{
+			"name": "plg_system_extrapro.administrator.config",
+			"type": "script",
+			"uri": "plg_system_extrapro/administrator/config.min.js",
+			"attributes": {
+				"defer": true,
+				"type": "module"
+			},
+			"version": "auto"
+		},
+		{
+			"name": "plg_system_extrapro.administrator.overrides",
+			"type": "script",
+			"uri": "plg_system_extrapro/administrator/overrides.min.js",
+			"attributes": {
+				"defer": true,
+				"type": "module"
+			},
+			"version": "auto"
+		},
+		{
+			"name": "plg_system_extrapro.site.toolbar",
+			"type": "script",
+			"uri": "plg_system_extrapro/site/toolbar.min.js",
+			"attributes": {
+				"defer": true,
+				"type": "module"
+			},
+			"version": "auto"
+		}
+	]
+}
