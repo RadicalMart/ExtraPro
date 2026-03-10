@@ -14,6 +14,7 @@
 use Joomla\CMS\Extension\PluginInterface;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Plugin\PluginHelper;
+use Joomla\Database\DatabaseDriver;
 use Joomla\DI\Container;
 use Joomla\DI\ServiceProviderInterface;
 use Joomla\Event\DispatcherInterface;
@@ -28,18 +29,22 @@ return new class implements ServiceProviderInterface {
 	 *
 	 * @since   1.0.0
 	 */
-	public function register(Container $container)
+	public function register(Container $container): void
 	{
 		$container->set(PluginInterface::class,
 			function (Container $container) {
 				// Create plugin class
-				$plugin  = PluginHelper::getPlugin('system', 'extrapro');
 				$subject = $container->get(DispatcherInterface::class);
-				$plugin  = new ExtraPro($subject, (array) $plugin);
+				$config  = (array) PluginHelper::getPlugin('system', 'extrapro');
+				$plugin  = new ExtraPro($subject, $config);
 
 				// Set application
 				$app = Factory::getApplication();
 				$plugin->setApplication($app);
+
+				// Set database
+				$db = $container->get(DatabaseDriver::class);
+				$plugin->setDatabase($db);
 
 				return $plugin;
 			}

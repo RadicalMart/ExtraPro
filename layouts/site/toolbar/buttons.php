@@ -25,24 +25,24 @@ extract($displayData);
  */
 
 $pos = '';
-if (strpos($position, 'left') !== false)
+if (str_contains($position, 'left'))
 {
 	$pos = 'right';
 }
-elseif (strpos($position, 'right') !== false)
+elseif (str_contains($position, 'right'))
 {
 	$pos = 'left';
 }
-elseif (strpos($position, 'top') !== false)
+elseif (str_contains($position, 'top'))
 {
 	$pos = 'bottom';
 }
-elseif (strpos($position, 'bottom') !== false)
+elseif (str_contains($position, 'bottom'))
 {
 	$pos = 'top';
 }
 
-$center = (strpos($position, '-center') !== false);
+$center = (str_contains($position, '-center'));
 ?>
 <div id="ExtraProToolbar"
 	 class="uk-position-fixed uk-position-small uk-position-<?php echo $position; ?> <?php echo ($center) ? 'uk-flex' : ''; ?>">

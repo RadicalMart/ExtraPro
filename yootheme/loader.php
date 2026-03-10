@@ -19,7 +19,7 @@ return [
 	'extend' => [
 		View::class => function (View $view) {
 			$view->addLoader(function ($name, $parameters, callable $next) {
-				if (strpos($name, '~extrapro') !== false)
+				if (str_contains($name, '~extrapro'))
 				{
 					$name = str_replace('~extrapro', __DIR__, $name);
 				}

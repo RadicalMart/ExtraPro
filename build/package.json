@@ -33,7 +33,8 @@
 		"sass-loader": "^9.0",
 		"style-loader": "^1.3.0",
 		"terser-webpack-plugin": "^4.2.3",
-		"webpack": "^5.21.2",
-		"webpack-cli": "^4.5.0"
+		"webpack": "5.104.1",
+		"webpack-cli": "^4.5.0",
+		"acorn-import-attributes": "^1.9.5"
 	}
 }

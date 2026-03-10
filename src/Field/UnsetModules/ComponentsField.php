@@ -13,9 +13,9 @@ namespace Joomla\Plugin\System\ExtraPro\Field\UnsetModules;
 
 \defined('_JEXEC') or die;
 
-use Joomla\CMS\Filesystem\Folder;
-use Joomla\CMS\Filesystem\Path;
 use Joomla\CMS\Form\Field\ListField;
+use Joomla\Filesystem\Folder;
+use Joomla\Filesystem\Path;
 
 class ComponentsField extends ListField
 {
@@ -48,7 +48,7 @@ class ComponentsField extends ListField
 
 					foreach (Folder::files(Path::clean($viewsFolder . '/' . $view), '.php') as $tmpl)
 					{
-						if (strpos($tmpl, '_') !== false)
+						if (str_contains($tmpl, '_'))
 						{
 							continue;
 						}
@@ -67,7 +67,7 @@ class ComponentsField extends ListField
 
 					foreach (Folder::files(Path::clean($viewsFolder . '/' . $view . '/tmpl'), '.php') as $tmpl)
 					{
-						if (strpos($tmpl, '_') !== false)
+						if (str_contains($tmpl, '_'))
 						{
 							continue;
 						}
@@ -111,7 +111,7 @@ class ComponentsField extends ListField
 					$viewFolder = $viewsFolder . '/' . $view;
 					foreach (Folder::files(Path::clean($viewFolder), '.php') as $tmpl)
 					{
-						if (strpos($tmpl, '_') !== false)
+						if (str_contains($tmpl, '_'))
 						{
 							continue;
 						}

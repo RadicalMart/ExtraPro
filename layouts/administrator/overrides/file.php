@@ -26,8 +26,8 @@ extract($displayData);
  */
 
 $url = 'index.php?option=com_ajax&plugin=ExtraPro&group=system&format=html&action=createOverride'
-	. '&template_id=' . Factory::getApplication()->input->getInt('extension_id')
-	. '&file=' . base64_encode($path);
+		. '&template_id=' . Factory::getApplication()->getInput()->getInt('extension_id')
+		. '&file=' . base64_encode($path);
 ?>
 
 <a href="<?php echo Route::_($url, false); ?>">

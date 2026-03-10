@@ -14,9 +14,6 @@ namespace Joomla\Plugin\System\ExtraPro\Extension;
 \defined('_JEXEC') or die;
 
 use Joomla\CMS\Component\ComponentHelper;
-use Joomla\CMS\Filesystem\File;
-use Joomla\CMS\Filesystem\Folder;
-use Joomla\CMS\Filesystem\Path;
 use Joomla\CMS\Form\Form;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
@@ -28,15 +25,20 @@ use Joomla\CMS\Toolbar\Toolbar;
 use Joomla\CMS\Uri\Uri;
 use Joomla\CMS\User\User;
 use Joomla\CMS\WebAsset\WebAssetManager;
-use Joomla\Database\DatabaseDriver;
+use Joomla\Database\DatabaseAwareTrait;
 use Joomla\Database\ParameterType;
 use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
 use Joomla\Event\SubscriberInterface;
+use Joomla\Filesystem\File;
+use Joomla\Filesystem\Folder;
+use Joomla\Filesystem\Path;
 use Joomla\Registry\Registry;
 
 class ExtraPro extends CMSPlugin implements SubscriberInterface
 {
+	use DatabaseAwareTrait;
+
 	/**
 	 * Load the language file on instantiation.
 	 *
@@ -45,15 +47,6 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 * @since  1.0.0
 	 */
 	protected $autoloadLanguage = true;
-
-	/**
-	 * Loads the database object.
-	 *
-	 * @var  DatabaseDriver
-	 *
-	 * @since  1.0.0
-	 */
-	protected $db = null;
 
 	/**
 	 * Plugin functions status.
@@ -98,7 +91,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since 1.0.0
 	 */
-	protected $_administratorUser = null;
+	protected null|false|User $_administratorUser = null;
 
 	/**
 	 * Constructor.
@@ -108,7 +101,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	public function __construct(&$subject, $config = [])
+	public function __construct(&$subject, array $config = [])
 	{
 		parent::__construct($subject, $config);
 
@@ -155,10 +148,8 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-
-	public function onAfterInitialise()
+	public function onAfterInitialise(): void
 	{
-		$this->removePoliticalStatements();
 
 		// Check if YOOtheme Pro is loaded
 		if (!class_exists(\YOOtheme\Application::class, false))
@@ -177,7 +168,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	public function onAfterRoute()
+	public function onAfterRoute(): void
 	{
 		$this->enableChildTemplate();
 	}
@@ -191,7 +182,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	public function onContentPrepareForm(Event $event)
+	public function onContentPrepareForm(Event $event): void
 	{
 		/** @var Form $form */
 		$form     = $event->getArgument(0);
@@ -212,7 +203,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	public function onAfterCleanModuleList(Event $event)
+	public function onAfterCleanModuleList(Event $event): void
 	{
 		if (!$this->functions['unset_modules'] || !$this->checkTemplate())
 		{
@@ -246,7 +237,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	public function onRenderModule(Event $event)
+	public function onRenderModule(Event $event): void
 	{
 		if (!$this->functions['unset_modules'] || !$this->checkTemplate())
 		{
@@ -267,7 +258,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	public function onBeforeCompileHead()
+	public function onBeforeCompileHead(): void
 	{
 		$this->loadConfigWebAsset();
 		$this->addYOOthemeChildOverrides();
@@ -281,7 +272,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	public function onPageCacheGetKey(Event $event)
+	public function onPageCacheGetKey(Event $event): void
 	{
 		$parts = [];
 		if ($this->functions['unset_modules'])
@@ -314,12 +305,12 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	public function onAfterRender()
+	public function onAfterRender(): void
 	{
 		$app = $this->getApplication();
 		if ($app->isClient('site'))
 		{
-			if ($this->checkTemplate() && $app->input->getCmd('format', 'html') === 'html')
+			if ($this->checkTemplate() && $app->getInput()->getCmd('format', 'html') === 'html')
 			{
 				if (!$this->functions['images'] && !$this->functions['optimization'] && !$this->functions['correct_custom_js'])
 				{
@@ -343,7 +334,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	public function onExtensionAfterInstall(Event $event)
+	public function onExtensionAfterInstall(Event $event): void
 	{
 		$eid = $event->getArgument('eid', false);
 		if (empty($eid))
@@ -351,8 +342,8 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			return;
 		}
 
-		$db    = $this->db;
-		$query = $db->getQuery(true)
+		$db    = $this->getDatabase();
+		$query = $db->createQuery()
 			->select(['name', 'type', 'element'])
 			->from($db->quoteName('#__extensions'))
 			->where($db->quoteName('type') . ' = ' . $db->quote('template'))
@@ -372,11 +363,11 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	public function onAjax(Event $event)
+	public function onAjax(Event $event): void
 	{
 		try
 		{
-			$action = $this->getApplication()->input->get('action');
+			$action = $this->getApplication()->getInput()->get('action');
 			$method = $action;
 			if (empty($action) || !method_exists($this, $method))
 			{
@@ -394,65 +385,31 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	}
 
 	/**
-	 * Method to remove political statements from Joomla core source code files.
-	 *
-	 * @since 1.0.0
-	 */
-	protected function removePoliticalStatements()
-	{
-		if (!$this->functions['remove_political_statements'])
-		{
-			return;
-		}
-
-		$files = [
-			JPATH_ROOT . '/libraries/vendor/voku/portable-ascii/src/voku/helper/ASCII.php',
-			JPATH_ROOT . '/libraries/vendor/voku/portable-utf8/src/voku/helper/UTF8.php',
-		];
-
-		foreach ($files as $path)
-		{
-			$path = Path::clean($path);
-			if (is_file($path))
-			{
-				$contents = file_get_contents($path);
-				if (strpos($contents, 'To people') !== false)
-				{
-					$pattern     = '/(namespace voku\\\\helper;\\s*\\/\\*\\*).*?(\\* @(psalm-immutable|immutable)\\s*\\*\\/\\s*final class)/s';
-					$replacement = '$1' . PHP_EOL . ' $2';
-					$contents    = preg_replace($pattern, $replacement, $contents);
-
-					file_put_contents($path, $contents);
-				}
-			}
-		}
-	}
-
-	/**
 	 * Method to check core child templates functions enabled and fix if need.
 	 *
 	 * @param   bool  $run  Force enabled
 	 *
 	 * @since 1.0.0
 	 */
-	protected function enableChildTemplate(bool $run = false)
+	protected function enableChildTemplate(bool $run = false): void
 	{
 		if (!$this->functions['child'])
 		{
 			return;
 		}
 
-		$app = $this->getApplication();
+		$app   = $this->getApplication();
+		$input = $app->getInput();
 		if (!$run && !($app->isClient('administrator')
-				&& $app->input->getCmd('option') === 'com_templates'
-				&& in_array($app->input->getCmd('view'), ['templates', 'template'])))
+				&& $input->getCmd('option') === 'com_templates'
+				&& in_array($input->getCmd('view'), ['templates', 'template'])))
 		{
 			return;
 		}
 
 		// Fix db
-		$db     = $this->db;
-		$query  = $db->getQuery(true)
+		$db     = $this->getDatabase();
+		$query  = $db->createQuery()
 			->select(['extension_id', 'name'])
 			->from($db->quoteName('#__extensions'))
 			->where($db->quoteName('name') . ' = ' . $db->quote('YOOtheme'))
@@ -501,7 +458,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 		// Fix previews
 		$srcFolder  = JPATH_ROOT . '/templates/yootheme';
 		$destFolder = JPATH_ROOT . '/media/templates/site/yootheme/images';
-		if (!Folder::exists($destFolder))
+		if (!is_dir($destFolder))
 		{
 			Folder::create($destFolder);
 		}
@@ -510,7 +467,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			$src  = Path::clean($srcFolder . '/' . $image);
 			$dest = Path::clean($destFolder . '/' . $image);
 
-			if (File::exists($src) && !File::exists($dest))
+			if (is_file($src) && !is_file($dest))
 			{
 				file_put_contents($dest, file_get_contents($src));
 			}
@@ -524,7 +481,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since 1.0.0
 	 */
-	protected function convertImages(string &$body = '')
+	protected function convertImages(string &$body = ''): void
 	{
 		if (!$this->functions['images'])
 		{
@@ -657,13 +614,14 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	protected function loadConfigWebAsset()
+	protected function loadConfigWebAsset(): void
 	{
-		$app = $this->getApplication();
+		$app   = $this->getApplication();
+		$input = $app->getInput();
 		if ($app->isClient('administrator')
-			&& $app->input->getCmd('option') === 'com_plugins'
-			&& $app->input->getCmd('view') === 'plugin'
-			&& $app->input->getInt('extension_id') === $this->_id)
+			&& $input->getCmd('option') === 'com_plugins'
+			&& $input->getCmd('view') === 'plugin'
+			&& $input->getInt('extension_id') === $this->_id)
 		{
 			$this->getWebAssetManager()->useScript('plg_system_extrapro.administrator.config');
 		}
@@ -680,7 +638,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	protected function addPreviewButton(string $formName, Form $form, $data = [])
+	protected function addPreviewButton(string $formName, Form $form, mixed $data = []): void
 	{
 		if (!$this->functions['preview'] || !$this->getApplication()->isClient('administrator') || !is_object($data))
 		{
@@ -715,6 +673,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 
 		if ($preview)
 		{
+			// TODO Toolbar
 			$toolbar = Toolbar::getInstance();
 
 			$preview = Route::link('site', $preview);
@@ -735,21 +694,22 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since 1.0.0
 	 */
-	protected function addYOOthemeChildOverrides()
+	protected function addYOOthemeChildOverrides(): void
 	{
-		$app = $this->getApplication();
+		$app   = $this->getApplication();
+		$input = $app->getInput();
 		if (!$this->functions['child']
 			|| !$app->isClient('administrator')
-			|| $app->input->getCmd('option') !== 'com_templates'
-			|| $app->input->getCmd('view') !== 'template'
+			|| $input->getCmd('option') !== 'com_templates'
+			|| $input->getCmd('view') !== 'template'
 		)
 		{
 			return;
 		}
 
-		$eid      = $app->input->getInt('id');
-		$db       = $this->db;
-		$query    = $db->getQuery(true)
+		$eid      = $input->getInt('id');
+		$db       = $this->getDatabase();
+		$query    = $db->createQuery()
 			->select('manifest_cache')
 			->from($db->quoteName('#__extensions'))
 			->where($db->quoteName('extension_id') . ' = :eid')
@@ -876,7 +836,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since 1.0.0
 	 */
-	protected function createOverride()
+	protected function createOverride(): void
 	{
 		if (!$this->functions['child'])
 		{
@@ -889,15 +849,16 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_ACCESS_DENIED'), 403);
 		}
 
-		$file = $app->input->getBase64('file');
+		$input = $app->getInput();
+		$file  = $input->getBase64('file');
 		if (empty($file))
 		{
 			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FILE_NOT_FOUND'), 404);
 		}
 
-		$eid       = $app->input->getInt('template_id');
-		$db        = $this->db;
-		$query     = $db->getQuery(true)
+		$eid       = $input->getInt('template_id');
+		$db        = $this->getDatabase();
+		$query     = $db->createQuery()
 			->select(['element', 'manifest_cache'])
 			->from($db->quoteName('#__extensions'))
 			->where($db->quoteName('extension_id') . ' = :eid')
@@ -920,7 +881,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_FILE_NOT_FOUND'), 404);
 		}
 
-		if (strpos($src, JPATH_ROOT . '/templates/yootheme/') === false)
+		if (!str_contains($src, JPATH_ROOT . '/templates/yootheme/'))
 		{
 			throw new \Exception(Text::_('PLG_SYSTEM_EXTRAPRO_ERROR_ACCESS_DENIED'), 403);
 		}
@@ -967,7 +928,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since 1.0.0
 	 */
-	protected function addSiteToolbar()
+	protected function addSiteToolbar(): void
 	{
 		if (!$this->functions['toolbar'] || !$this->checkTemplate())
 		{
@@ -976,9 +937,10 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 
 		$context = '';
 		$app     = $this->getApplication();
-		$option  = $app->input->get('option');
-		$view    = $app->input->get('view');
-		$id      = $app->input->getInt('id');
+		$input   = $app->getInput();
+		$option  = $input->get('option');
+		$view    = $input->get('view');
+		$id      = $input->getInt('id');
 		if ($option === 'com_content')
 		{
 			if ($view === 'article')
@@ -1015,9 +977,9 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	}
 
 	/**
-	 * Method to get site toolbar html.
+	 * Method to get site toolbar HTML.
 	 *
-	 * @return string Site toolbar html.
+	 * @return string Site toolbar HTML.
 	 *
 	 * @since 1.0.0
 	 */
@@ -1042,13 +1004,14 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 
 		// Prepare buttons
 		$app     = $this->getApplication();
-		$return  = urldecode($app->input->getString('return'));
+		$input   = $app->getInput();
+		$return  = urldecode($input->getString('return'));
 		$buttons = [
 			'customizer'    => [
 				'id'       => 'customizer',
 				'href'     => Route::link('administrator',
 					'index.php?option=com_ajax&p=customizer&format=html'
-					. '&templateStyle=' . $app->input->getInt('style_id')
+					. '&templateStyle=' . $input->getInt('style_id')
 					. '&site=' . $return
 					. '&return=' . $return),
 				'title'    => Text::_('PLG_SYSTEM_EXTRAPRO_TOOLBAR_CUSTOMIZER'),
@@ -1065,7 +1028,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			],
 		];
 
-		$context = $app->input->get('context');
+		$context = $input->get('context');
 		$paths   = explode('.', $context);
 		if (!empty($paths[0]))
 		{
@@ -1079,7 +1042,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 							'id'       => 'article_builder',
 							'href'     => Route::link('administrator',
 								'index.php?option=com_ajax&p=customizer&section=builder&format=html'
-								. '&templateStyle=' . $app->input->getInt('style_id')
+								. '&templateStyle=' . $input->getInt('style_id')
 								. '&site=' . $return
 								. '&return=' . $return),
 							'title'    => Text::_('PLG_SYSTEM_EXTRAPRO_TOOLBAR_CONTENT_ARTICLE_BUILDER'),
@@ -1192,7 +1155,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since 1.0.0
 	 */
-	protected function isModuleUnset($module): bool
+	protected function isModuleUnset(mixed $module): bool
 	{
 		if (!$this->functions['unset_modules'])
 		{
@@ -1210,19 +1173,20 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			$values = (new Registry($params->get('extrapro_unset_modules_components')))->toArray();
 
 			$app    = $this->getApplication();
-			$option = $app->input->getCmd('option');
+			$input  = $app->getInput();
+			$option = $input->getCmd('option');
 			if (in_array($option, $values))
 			{
 				return true;
 			}
 
-			$view = $option . '.' . $app->input->getCmd('view');
+			$view = $option . '.' . $input->getCmd('view');
 			if (in_array($view, $values))
 			{
 				return true;
 			}
 
-			$layout = $view . '.' . $app->input->getCmd('layout', 'default');
+			$layout = $view . '.' . $input->getCmd('layout', 'default');
 			if (in_array($layout, $values))
 			{
 				return true;
@@ -1244,14 +1208,14 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since 1.0.0
 	 */
-	protected function getAdministratorUser()
+	protected function getAdministratorUser(): User|false
 	{
 		if ($this->_administratorUser === null)
 		{
 			$this->_administratorUser = false;
 
 			$sessions = [];
-			foreach ($this->getApplication()->input->cookie->getArray() as $key => $value)
+			foreach ($this->getApplication()->getInput()->cookie->getArray() as $key => $value)
 			{
 				if (strlen($key) === 32)
 				{
@@ -1263,8 +1227,8 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 				return false;
 			}
 
-			$db         = $this->db;
-			$query      = $db->getQuery(true)
+			$db         = $this->getDatabase();
+			$query      = $db->createQuery()
 				->select('userid')
 				->from($db->quoteName('#__session'))
 				->whereIn($db->quoteName('session_id'), $sessions, ParameterType::STRING)
@@ -1304,7 +1268,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since  1.0.0
 	 */
-	protected function loadModuleForm(string $formName, Form $form)
+	protected function loadModuleForm(string $formName, Form $form): void
 	{
 		if (!$this->functions['unset_modules'] || $formName !== 'com_modules.module')
 		{
@@ -1321,7 +1285,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since 1.0.0
 	 */
-	protected function optimization(string &$body = '')
+	protected function optimization(string &$body = ''): void
 	{
 		if (!$this->functions['optimization'])
 		{
@@ -1354,7 +1318,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			$source = str_replace('/', '\\/', $item['source']);
 			if ($item['type'] === 'script')
 			{
-				preg_match_all('#<script.*src=".*' . $source . '.*".*<\/script>#i', $search, $find);
+				preg_match_all('#<script.*src=".*' . $source . '.*".*</script>#i', $search, $find);
 			}
 			else
 			{
@@ -1407,14 +1371,14 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 	 *
 	 * @since 1.0.0
 	 */
-	protected function correctCustomJS(string &$body = '')
+	protected function correctCustomJS(string &$body = ''): void
 	{
 		if (!$this->functions['correct_custom_js'])
 		{
 			return;
 		}
 
-		$pattern = '/<script src="(\/templates\/(yootheme(?:_[^\/]+)?)\/js\/custom\.js(?:\?[^"]*)?)">/';
+		$pattern = '~<script\s+src="(/templates/(yootheme(?:_[^/]+)?)/js/custom\.js(?:\?[^"]+)?)"></script>~';
 		preg_match($pattern, $body, $matches);
 		if (empty($matches) || empty($matches[1]) || empty($matches[2]))
 		{
@@ -1426,7 +1390,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 			'pathOnly' => true,
 			'relative' => false,
 		], ['version' => 'auto']);
-		$src          .= (strpos($src, '?') === false) ? '?' . $mediaVersion : '&' . $mediaVersion;
+		$src          .= (!str_contains($src, '?')) ? '?' . $mediaVersion : '&' . $mediaVersion;
 		$body         = str_replace($matches[1], $src, $body);
 	}
 }

@@ -13,9 +13,6 @@
 
 use Joomla\CMS\Application\AdministratorApplication;
 use Joomla\CMS\Factory;
-use Joomla\CMS\Filesystem\File;
-use Joomla\CMS\Filesystem\Folder;
-use Joomla\CMS\Filesystem\Path;
 use Joomla\CMS\Installer\Installer;
 use Joomla\CMS\Installer\InstallerAdapter;
 use Joomla\CMS\Installer\InstallerScriptInterface;
@@ -26,9 +23,12 @@ use Joomla\CMS\Version;
 use Joomla\Database\DatabaseDriver;
 use Joomla\DI\Container;
 use Joomla\DI\ServiceProviderInterface;
+use Joomla\Filesystem\File;
+use Joomla\Filesystem\Folder;
+use Joomla\Filesystem\Path;
 
 return new class () implements ServiceProviderInterface {
-	public function register(Container $container)
+	public function register(Container $container): void
 	{
 		$container->set(InstallerScriptInterface::class, new class ($container->get(AdministratorApplication::class)) implements InstallerScriptInterface {
 			/**
@@ -363,7 +363,7 @@ return new class () implements ServiceProviderInterface {
 			 *
 			 * @since 1.0.0
 			 */
-			protected function postInstallMessage()
+			protected function postInstallMessage(): void
 			{
 				$db           = $this->db;
 				$query        = $db->getQuery(true)

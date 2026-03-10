@@ -139,17 +139,6 @@
 						</form>
 					</field>
 				</fieldset>
-				<fieldset name="remove_political_statements"
-						  label="PLG_SYSTEM_EXTRAPRO_PARAMS_REMOVE_POLITICAL_STATEMENTS"
-						  description="PLG_SYSTEM_EXTRAPRO_PARAMS_REMOVE_POLITICAL_STATEMENTS_DESC">
-					<field name="remove_political_statements" type="radio"
-						   label="PLG_SYSTEM_EXTRAPRO_PARAMS_ENABLE"
-						   class="btn-group btn-group-yesno"
-						   default="1">
-						<option value="1">JYES</option>
-						<option value="0">JNO</option>
-					</field>
-				</fieldset>
 			</fieldset>
 		</fields>
 	</config>
