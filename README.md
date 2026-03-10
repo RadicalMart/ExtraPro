@@ -33,6 +33,3 @@ version of joomla there, and also takes into account the presence of a min file.
 This feature allows you to cut or move scripts and styles from `<head>; to the footer.
 
 **Use at your own risk!**
-
-### Remove Political Statement
-This function removes political statements from the Joomla source code.

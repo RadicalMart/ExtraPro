@@ -21,7 +21,6 @@ use Joomla\CMS\Layout\LayoutHelper;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Toolbar\Button\CustomButton;
-use Joomla\CMS\Toolbar\Toolbar;
 use Joomla\CMS\Uri\Uri;
 use Joomla\CMS\User\User;
 use Joomla\CMS\WebAsset\WebAssetManager;
@@ -673,9 +672,7 @@ class ExtraPro extends CMSPlugin implements SubscriberInterface
 
 		if ($preview)
 		{
-			// TODO Toolbar
-			$toolbar = Toolbar::getInstance();
-
+			$toolbar = $this->getApplication()->getDocument()->getToolbar();
 			$preview = Route::link('site', $preview);
 			$html    = LayoutHelper::render('plugins.system.extrapro.administrator.preview.toolbar', [
 				'link'  => $preview,
